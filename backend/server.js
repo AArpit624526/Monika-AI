@@ -1,30 +1,41 @@
-// Attach event listener to the Send button
-document.getElementById("sendButton").addEventListener("click", askMonika);
+const express = require("express");
+const fetch = require("node-fetch");
+const cors = require("cors");
 
-async function askMonika() {
-  const q = document.getElementById("question").value;
-  if (!q) return; // do nothing if input is empty
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-  // Your backend URL from Render (safe, no API key exposed here)
-  const backendUrl = "https://YOUR_RENDER_BACKEND_URL/ask";
+const persona = "You are Monika, a cheerful anime girl who speaks warmly, playfully, and affectionately.";
+
+app.post("/ask", async (req, res) => {
+  const question = req.body.question || "";
+  const apiKey = process.env.GEMINI_API_KEY; // must be set in Render
+
+  if (!apiKey) {
+    return res.status(500).json({ error: "Server missing GEMINI_API_KEY" });
+  }
+
+  const payload = {
+    contents: [{ parts: [{ text: persona + " " + question }] }]
+  };
 
   try {
-    // Send the question to your backend
-    const res = await fetch(backendUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
 
-    // Get Monika's reply from backend
-    const data = await res.json();
-
-    // Show Monika’s reply in the chat box
-    document.getElementById("chat").innerHTML +=
-      `<p class="monika">Monika: ${JSON.stringify(data)}</p>`;
+    const data = await response.json();
+    return res.json(data);
   } catch (err) {
-    // Show error if something goes wrong
-    document.getElementById("chat").innerHTML +=
-      `<p class="monika">Error: ${err.message}</p>`;
+    return res.status(500).json({ error: err.message });
   }
-}
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Monika backend running on port ${PORT}`));

@@ -1,121 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;600&display=swap');
+
 body {
   margin: 0;
-  font-family: "Dancing Script", cursive;
-  background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #ffdde1 0%, #ee9ca7 100%);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
 }
 
-/* Floating hearts animation */
+/* --- Floating Hearts Background --- */
 @keyframes float {
-  0% { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+  0% { transform: translateY(0) rotate(-45deg) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-110vh) rotate(-45deg) scale(1.5); opacity: 0; }
 }
+
 .heart {
   position: absolute;
   bottom: -50px;
-  width: 30px;
-  height: 30px;
-  background: #e91e63;
-  clip-path: polygon(50% 0%, 100% 30%, 80% 100%, 50% 80%, 20% 100%, 0% 30%);
-  animation: float 10s linear infinite;
+  width: 20px;
+  height: 20px;
+  background: rgba(233, 30, 99, 0.4);
+  animation: float 12s linear infinite;
+  z-index: 0;
 }
 
+.heart::before, .heart::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: inherit;
+  border-radius: 50%;
+}
+.heart::before { top: -10px; left: 0; }
+.heart::after { left: 10px; top: 0; }
+
+/* --- Main Glassmorphism Container --- */
 .container {
-  width: 100%;
-  max-width: 600px;
-  background: #ffffffcc;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  width: 90%;
+  max-width: 450px;
+  height: 85vh;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 30px;
+  padding: 25px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   position: relative;
   z-index: 1;
 }
 
 h1 {
+  font-family: 'Dancing Script', cursive;
+  font-size: 2.5rem;
   text-align: center;
-  color: #e91e63;
-  margin-bottom: 15px;
+  color: #c2185b;
+  margin: 0 0 15px 0;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.05));
 }
 
+/* --- Chat Area & Bubbles --- */
 .chat {
-  background: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  height: 350px;
+  flex: 1;
   overflow-y: auto;
-  margin-bottom: 15px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  scrollbar-width: none;
 }
+.chat::-webkit-scrollbar { display: none; }
 
 .bubble {
-  margin: 8px 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  line-height: 1.4;
-  word-wrap: break-word;
+  max-width: 85%;
+  padding: 12px 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  position: relative;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .bubble.user {
-  background: #fce4ec;
-  text-align: right;
+  background: #e91e63;
+  color: white;
+  align-self: flex-end;
+  border-radius: 20px 20px 4px 20px;
+  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.2);
 }
 
 .bubble.monika {
-  background: #f8bbd0;
-  color: #4a148c;
+  background: white;
+  color: #333;
+  align-self: flex-start;
+  border-radius: 20px 20px 20px 4px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.02);
 }
 
 .bubble.error {
-  background: #ffebee;
-  color: #b00020;
+  background: #ffecf0;
+  color: #d81b60;
+  font-size: 13px;
+  align-self: center;
+  border-radius: 10px;
 }
 
+/* --- Sleek Input Design --- */
 .input-area {
   display: flex;
-  gap: 8px;
+  background: white;
+  padding: 6px;
+  border-radius: 50px;
+  margin-top: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.03);
 }
 
 input#question {
   flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 16px;
+  border: none;
+  padding: 10px 20px;
+  font-size: 15px;
+  outline: none;
+  background: transparent;
+  color: #444;
 }
 
 button#sendButton {
   background: #e91e63;
-  color: white;
+  width: 44px;
+  height: 44px;
   border: none;
-  border-radius: 10px;
-  padding: 12px 18px;
+  border-radius: 50%;
+  color: white;
   cursor: pointer;
-  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: bold;
 }
+
 button#sendButton:hover {
+  transform: scale(1.05);
   background: #c2185b;
+  box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3);
 }
 
-.status {
-  color: #666;
-  font-size: 14px;
-  margin: 8px 0;
+button#sendButton:disabled {
+  background: #f48fb1;
+  cursor: not-allowed;
 }
 
-/* Typing indicator */
+/* --- Typing Dots Animation --- */
 .typing {
-  display: inline-block;
-  font-size: 14px;
+  font-style: italic;
+  opacity: 0.8;
   color: #e91e63;
-}
-.typing span {
-  animation: blink 1.2s infinite;
-}
-@keyframes blink {
-  0% { opacity: 0.2; }
-  50% { opacity: 1; }
-  100% { opacity: 0.2; }
 }

@@ -2,21 +2,30 @@ const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- THE SMART PATH FIX ---
-// This tells Express to serve files from the same folder as server.js
-app.use(express.static(__dirname)); 
+// --- DYNAMIC PATH SOLVER ---
+// This checks if we are in a 'backend' subfolder or the root
+const rootPath = fs.existsSync(path.join(__dirname, "index.html")) 
+                 ? __dirname 
+                 : path.join(__dirname, "..");
 
-// This looks for index.html in the same folder as server.js
+app.use(express.static(rootPath));
+
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  const indexPath = path.join(rootPath, "index.html");
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send("Monika says: I can't find my index.html file in " + rootPath);
+  }
 });
 
-const persona = "You are Monika, a cheerful anime companion. Speak warmly with emojis and asterisks like *giggles*. Always call the user Arpit.";
+const persona = "You are Monika, a cheerful anime companion. Always call the user Arpit.";
 
 app.post("/ask", async (req, res) => {
   const userQuestion = req.body.question || "";
@@ -46,4 +55,4 @@ app.post("/ask", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Monika is back and ready!`));
+app.listen(PORT, () => console.log(`✨ Monika is officially awake on port ${PORT} ✨`));

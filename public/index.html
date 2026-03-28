@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Monika AI</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monika AI Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>💖 Talk to Monika</h1>
-  <div id="chat"></div>
-  
-  <div class="input-area">
-    <input id="question" type="text" placeholder="Ask Monika..." />
-    <button id="sendButton">Send</button>
+  <div class="container">
+    <h1>💖 Monika AI 💖</h1>
+    <div id="chat" class="chat"></div>
+
+    <div class="input-area">
+      <input id="question" type="text" placeholder="Type your message..." autocomplete="off" />
+      <button id="sendButton">Send</button>
+    </div>
   </div>
 
   <script src="script.js"></script>

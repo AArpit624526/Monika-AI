@@ -1,30 +1,67 @@
-// Attach event listener to the Send button
-document.getElementById("sendButton").addEventListener("click", askMonika);
+// Backend endpoint
+const backendUrl = "https://monika-ai-0jpf.onrender.com/ask";
+
+const sendButton = document.getElementById("sendButton");
+const chat = document.getElementById("chat");
+const input = document.getElementById("question");
+
+sendButton.addEventListener("click", askMonika);
+input.addEventListener("keydown", (e) => { if (e.key === "Enter") askMonika(); });
+
+function appendBubble(text, cls = "monika") {
+  const div = document.createElement("div");
+  div.className = `bubble ${cls}`;
+  div.innerHTML = escapeHtml(text).replace(/\n/g, "<br>");
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function setStatus(text) {
+  const el = document.createElement("div");
+  el.className = "status";
+  el.textContent = text;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+  return el;
+}
 
 async function askMonika() {
-  const q = document.getElementById("question").value;
-  if (!q) return; // do nothing if input is empty
-
-  // Your backend URL from Render (safe, no API key exposed here)
-  const backendUrl = "https://monika-ai-0jpf.onrender.com/ask";
+  const q = input.value.trim();
+  if (!q) return;
+  appendBubble(q, "user");
+  input.value = "";
+  const statusEl = setStatus("Monika is thinking…");
+  sendButton.disabled = true;
 
   try {
-    // Send the question to your backend
     const res = await fetch(backendUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: q })
     });
 
-    // Get Monika's reply from backend
-    const data = await res.json();
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Server ${res.status}: ${txt}`);
+    }
 
-    // Show Monika’s reply in the chat box
-    document.getElementById("chat").innerHTML +=
-      `<p class="monika">Monika: ${JSON.stringify(data)}</p>`;
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text 
+                 || data?.message 
+                 || "No reply.";
+
+    statusEl.remove();
+    appendBubble(text, "monika");
   } catch (err) {
-    // Show error if something goes wrong
-    document.getElementById("chat").innerHTML +=
-      `<p class="monika">Error: ${err.message}</p>`;
+    statusEl.remove();
+    appendBubble("Error: " + err.message, "error");
+  } finally {
+    sendButton.disabled = false;
   }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (m) => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
+  ));
 }

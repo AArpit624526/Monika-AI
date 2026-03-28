@@ -1,14 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;600&display=swap');
 
+/* --- Root Variables & Base --- */
+:root {
+  --bg-normal: linear-gradient(135deg, #ffdde1 0%, #ee9ca7 100%);
+  --bg-happy: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+  --bg-loving: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+  --monika-pink: #e91e63;
+  --monika-dark: #c2185b;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #ffdde1 0%, #ee9ca7 100%);
+  background: var(--bg-normal);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   overflow: hidden;
+  transition: background 1.5s ease-in-out; /* Smooth mood shifting */
+}
+
+/* --- Mood Classes (Controlled by script.js) --- */
+body.mood-happy {
+  background: var(--bg-happy);
+}
+
+body.mood-loving {
+  background: var(--bg-loving);
+  animation: heart-pulse 4s infinite;
+}
+
+@keyframes heart-pulse {
+  0% { filter: saturate(1); }
+  50% { filter: saturate(1.4); }
+  100% { filter: saturate(1); }
 }
 
 /* --- Floating Hearts Background --- */
@@ -22,9 +48,16 @@ body {
   bottom: -50px;
   width: 20px;
   height: 20px;
-  background: rgba(233, 30, 99, 0.4);
+  background: rgba(233, 30, 99, 0.3);
   animation: float 12s linear infinite;
   z-index: 0;
+  transition: background 1s ease;
+}
+
+/* Make hearts redder and faster when Loving */
+body.mood-loving .heart {
+  background: rgba(255, 0, 80, 0.6);
+  animation-duration: 6s; 
 }
 
 .heart::before, .heart::after {
@@ -40,14 +73,14 @@ body {
 
 /* --- Main Glassmorphism Container --- */
 .container {
-  width: 90%;
+  width: 95%;
   max-width: 450px;
   height: 85vh;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   border-radius: 30px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 25px 50px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
@@ -58,9 +91,9 @@ body {
 
 h1 {
   font-family: 'Dancing Script', cursive;
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   text-align: center;
-  color: #c2185b;
+  color: var(--monika-dark);
   margin: 0 0 15px 0;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.05));
 }
@@ -72,27 +105,27 @@ h1 {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
   scrollbar-width: none;
 }
 .chat::-webkit-scrollbar { display: none; }
 
 .bubble {
   max-width: 85%;
-  padding: 12px 18px;
+  padding: 12px 16px;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.5;
   position: relative;
-  animation: fadeIn 0.4s ease;
+  animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes pop-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .bubble.user {
-  background: #e91e63;
+  background: var(--monika-pink);
   color: white;
   align-self: flex-end;
   border-radius: 20px 20px 4px 20px;
@@ -108,39 +141,29 @@ h1 {
   border: 1px solid rgba(0,0,0,0.02);
 }
 
-.bubble.error {
-  background: #ffecf0;
-  color: #d81b60;
-  font-size: 13px;
-  align-self: center;
-  border-radius: 10px;
-}
-
-/* --- Sleek Input Design --- */
+/* --- Input Area --- */
 .input-area {
   display: flex;
   background: white;
-  padding: 6px;
+  padding: 8px;
   border-radius: 50px;
   margin-top: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.03);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
 input#question {
   flex: 1;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 18px;
   font-size: 15px;
   outline: none;
   background: transparent;
-  color: #444;
 }
 
 button#sendButton {
-  background: #e91e63;
-  width: 44px;
-  height: 44px;
+  background: var(--monika-pink);
+  width: 42px;
+  height: 42px;
   border: none;
   border-radius: 50%;
   color: white;
@@ -148,24 +171,18 @@ button#sendButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  font-weight: bold;
+  transition: transform 0.2s ease;
 }
 
 button#sendButton:hover {
-  transform: scale(1.05);
-  background: #c2185b;
-  box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3);
+  transform: scale(1.1);
+  background: var(--monika-dark);
 }
 
-button#sendButton:disabled {
-  background: #f48fb1;
-  cursor: not-allowed;
-}
-
-/* --- Typing Dots Animation --- */
-.typing {
+/* --- Writing Indicator --- */
+.writing-msg {
   font-style: italic;
-  opacity: 0.8;
-  color: #e91e63;
+  font-size: 13px;
+  color: var(--monika-pink);
+  margin-left: 10px;
 }

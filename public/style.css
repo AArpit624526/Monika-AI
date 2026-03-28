@@ -1,19 +1,27 @@
-:root {
-  --bg: linear-gradient(135deg, #ffe6f0, #fff0f6);
-  --accent: #e91e63;
-  --bubble-user: #fce4ec;
-  --bubble-monika: #f8bbd0;
-  --bubble-error: #ffebee;
-}
-
 body {
   margin: 0;
-  font-family: "Comic Sans MS", cursive, sans-serif;
-  background: var(--bg);
+  font-family: "Dancing Script", cursive;
+  background: linear-gradient(135deg, #ffdde1, #ee9ca7);
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  overflow: hidden;
+}
+
+/* Floating hearts animation */
+@keyframes float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+}
+.heart {
+  position: absolute;
+  bottom: -50px;
+  width: 30px;
+  height: 30px;
+  background: #e91e63;
+  clip-path: polygon(50% 0%, 100% 30%, 80% 100%, 50% 80%, 20% 100%, 0% 30%);
+  animation: float 10s linear infinite;
 }
 
 .container {
@@ -23,11 +31,13 @@ body {
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1;
 }
 
 h1 {
   text-align: center;
-  color: var(--accent);
+  color: #e91e63;
   margin-bottom: 15px;
 }
 
@@ -49,17 +59,17 @@ h1 {
 }
 
 .bubble.user {
-  background: var(--bubble-user);
+  background: #fce4ec;
   text-align: right;
 }
 
 .bubble.monika {
-  background: var(--bubble-monika);
+  background: #f8bbd0;
   color: #4a148c;
 }
 
 .bubble.error {
-  background: var(--bubble-error);
+  background: #ffebee;
   color: #b00020;
 }
 
@@ -77,7 +87,7 @@ input#question {
 }
 
 button#sendButton {
-  background: var(--accent);
+  background: #e91e63;
   color: white;
   border: none;
   border-radius: 10px;
@@ -85,7 +95,6 @@ button#sendButton {
   cursor: pointer;
   transition: background 0.3s;
 }
-
 button#sendButton:hover {
   background: #c2185b;
 }
@@ -94,4 +103,19 @@ button#sendButton:hover {
   color: #666;
   font-size: 14px;
   margin: 8px 0;
+}
+
+/* Typing indicator */
+.typing {
+  display: inline-block;
+  font-size: 14px;
+  color: #e91e63;
+}
+.typing span {
+  animation: blink 1.2s infinite;
+}
+@keyframes blink {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
 }

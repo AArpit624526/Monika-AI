@@ -14,15 +14,16 @@ function appendBubble(text, cls = "monika") {
   div.innerHTML = escapeHtml(text).replace(/\n/g, "<br>");
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+  if (cls === "monika") playPop();
 }
 
-function setStatus(text) {
-  const el = document.createElement("div");
-  el.className = "status";
-  el.textContent = text;
-  chat.appendChild(el);
+function showTyping() {
+  const div = document.createElement("div");
+  div.className = "bubble monika typing";
+  div.innerHTML = "Monika is typing<span>.</span><span>.</span><span>.</span>";
+  chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
-  return el;
+  return div;
 }
 
 async function askMonika() {
@@ -30,7 +31,8 @@ async function askMonika() {
   if (!q) return;
   appendBubble(q, "user");
   input.value = "";
-  const statusEl = setStatus("Monika is thinking…");
+
+  const typingEl = showTyping();
   sendButton.disabled = true;
 
   try {
@@ -46,14 +48,12 @@ async function askMonika() {
     }
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text 
-                 || data?.message 
-                 || "No reply.";
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply.";
 
-    statusEl.remove();
+    typingEl.remove();
     appendBubble(text, "monika");
   } catch (err) {
-    statusEl.remove();
+    typingEl.remove();
     appendBubble("Error: " + err.message, "error");
   } finally {
     sendButton.disabled = false;
@@ -64,4 +64,8 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => (
     {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
   ));
+}
+
+function playPop() {
+  document.getElementById("popSound").play();
 }

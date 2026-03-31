@@ -1,156 +1,107 @@
-# 🌸 Monika-AI
+# 🌸 Monika-AI: Intelligent Anime Companion
 
-Monika-AI is a web-based AI chatbot inspired by **Monika from Doki Doki Literature Club**, designed to provide interactive, personality-driven conversations directly in the browser.
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_2.5_Flash-8E75B2?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Monika-AI** is a personality-driven, interactive companion inspired by *Doki Doki Literature Club*. Built with a focus on low-latency conversation, this project uses the latest **Gemini 2.5 Flash API** and browser-native speech synthesis to create a seamless "Live Mode" experience.
+
+[🚀 Try the Live Demo](https://monika-ai-0jpf.onrender.com)
 
 ---
 
-## 🚀 Overview
+## ✨ Key Features
 
-This project combines a **Node.js backend** with a simple **HTML/CSS/JavaScript frontend** to create a responsive chatbot experience.
-
-Users can interact with Monika through a web interface, while the backend handles AI processing and responses.
-
----
-
-## ✨ Features
-
-- 💬 Interactive AI chatbot  
-- 🌐 Web-based interface (no installation for users)  
-- ⚡ Fast communication between frontend and backend  
-- 🎭 Personality-inspired responses (Monika-style)  
-- 🧩 Lightweight and easy to extend  
+- **🧠 Advanced Intelligence:** Powered by `gemini-2.5-flash` for rapid, charming, and context-aware responses.
+- **🎙️ Live Voice-to-Voice:** Includes a "Live Mode" that uses the browser's `SpeechRecognition` and `SpeechSynthesis` for a hands-free conversation loop.
+- **💾 Long-Term Memory:** Integrated with **MongoDB** (Monika's Memory) to store chat history and maintain continuity.
+- **🎭 Dynamic Mood System:** Real-time background transitions and animations triggered by AI emotion tags (`[HAPPY]`, `[LOVING]`, etc.).
+- **⚡ Optimized for Performance:** Zero-latency voice generation using the Web Speech API (no external API calls for audio).
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Backend
-- Node.js  
-- Express.js (assumed if you're using a server)
-
 ### Frontend
-- HTML  
-- CSS  
-- JavaScript (Vanilla)
+- **HTML5/CSS3:** Custom "Soft Heart" UI with CSS keyframe animations.
+- **JavaScript (ES6+):** Handle real-time DOM updates and Web Speech API.
+
+### Backend
+- **Node.js & Express:** Robust API routing.
+- **Mongoose:** Object modeling for MongoDB session storage.
+- **Google Generative AI SDK:** Seamless integration with Gemini models.
 
 ---
 
 ## 📁 Project Structure
 
-```plaintext
+```text
 Monika-AI/
-│
 ├── backend/
-│   ├── server.js        # Backend server logic
-│   └── package.json     # Dependencies & scripts
-│
-├── frontend/
-│   ├── index.html       # Main UI
-│   ├── style.css        # Styling
-│   └── script.js        # Frontend logic
-````
-
----
-
-## 📦 Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/tagadearpit/Monika-AI.git
-cd Monika-AI
-```
-
-### 2. Install backend dependencies
-
-```bash
-cd backend
-npm install
+│   ├── server.js        # Express server, Gemini API & MongoDB logic
+│   └── package.json     # Dependencies (express, mongoose, axios)
+├── public/
+│   ├── index.html       # Monika UI
+│   ├── style.css        # Mood-based animations & heart-pulse effects
+│   └── script.js        # Voice-to-Voice loop & frontend logic
 ```
 
 ---
 
-## ▶️ Running the Project
+## 🚀 Installation & Setup
 
-### Start the backend server
+1. **Clone the Repo**
+   ```bash
+   git clone [https://github.com/tagadearpit/Monika-AI.git](https://github.com/tagadearpit/Monika-AI.git)
+   cd Monika-AI
+   ```
 
-```bash
-cd backend
-node server.js
-```
+2. **Backend Configuration**
+   ```bash
+   cd backend
+   npm install
+   ```
+   Create a `.env` file in the `backend` folder:
+   ```env
+   PORT=3000
+   GEMINI_API_KEY=your_google_ai_api_key
+   ```
 
-### Open the frontend
+3. **Run the Server**
+   ```bash
+   npm start
+   ```
 
-* Navigate to the `frontend` folder
-* Open `index.html` in your browser
-
-> 💡 Tip: You may need to configure API endpoints in `script.js` to match your backend URL.
-
----
-
-## ⚙️ Configuration
-
-* Update API endpoints in:
-
-  ```js
-  frontend/script.js
-  ```
-* Configure any API keys (if used) inside:
-
-  ```js
-  backend/server.js
-  ```
+4. **Launch the Interface**
+   Open `http://localhost:3000` in Google Chrome (recommended for the best voice quality).
 
 ---
 
-## 🎯 Future Improvements
+## 🎨 How it Works: The Mood System
 
-* [ ] Add chat history (memory)
-* [ ] Improve UI/UX design
-* [ ] Add voice interaction
-* [ ] Deploy to cloud (e.g., Vercel + Render)
-* [ ] Add authentication system
+Monika uses a system of tags to change her surroundings based on the conversation:
+- `[HAPPY]`: Triggers a calm, violet-blue aura.
+- `[LOVING]`: Triggers the **Heart Pulse** effect with deep pink gradients.
+- `[NORMAL]`: Returns to the soft pink aesthetic.
 
 ---
 
 ## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repo
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
-
----
+Contributions are welcome! If you have ideas for improving Monika's personality or adding new CSS effects, feel free to fork the repo and submit a PR.
 
 ## 📄 License
-
-This project is licensed under the MIT License.
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## ⚠️ Disclaimer
-
-This is a fan-made project inspired by *Doki Doki Literature Club* and is not affiliated with its original creators.
+This is a fan-made project and is not affiliated with Team Salvato.
 
 ---
-
-## 🌟 Support
-
-If you like this project, consider giving it a ⭐ on GitHub!
-
+Developed with ❤️ by [Arpit Tagade](https://github.com/tagadearpit)
 ```
 
 ---
 
-## 🔥 If you want next-level polish
-I can upgrade this further with:
-- 🔗 Live demo section  
-- 🧠 Exact explanation of your AI logic (if you paste `server.js`)  
-- 📸 UI screenshots / GIF  
-- 🏷️ GitHub badges (stars, forks, license, etc.)  
-- 🚀 Deployment guide (Render / Vercel)
+4. **Links:** It points directly to your Live Render link.
 
-Just say *“make it pro”* or drop your `server.js`, and I’ll level it up.
-```
+**You can copy-paste this directly into your `README.md` file on GitHub. Should I add a section about the "CandyRobot" hardware too, or keep it focused on the Web AI?**

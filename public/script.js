@@ -1,31 +1,30 @@
-const backendUrl = "https://monika-ai-0jpf.onrender.com/ask";
+// Ensure this is just the base URL without /ask at the end
+const baseUrl = "https://monika-ai-0jpf.onrender.com";
 
-// --- NEW: ElevenLabs Anime Voice Function ---
+// --- ElevenLabs Anime Voice Function ---
 async function monikaSpeak(text) {
+    // Remove mood tags [HAPPY] etc. for cleaner speech
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
 
     try {
-        // 2. Call the /voice route on your server
-        const response = await fetch(backendUrl.replace('/ask', '/voice'), {
+        const response = await fetch(`${baseUrl}/voice`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: cleanText })
         });
 
-        if (!response.ok) throw new Error("Voice failed");
+        if (!response.ok) throw new Error("Voice API failed");
 
-        // 3. Play the binary audio data
         const blob = await response.blob();
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         
-        audio.play().catch(e => console.log("Audio play blocked. Click once!"));
+        audio.play().catch(e => console.log("Click the page once to enable audio!"));
     } catch (error) {
-        console.error("ElevenLabs Error, falling back to robot:", error);
-        
-        // Fallback to browser voice if ElevenLabs fails/out of credits
+        console.error("Voice Error:", error);
+        // Fallback to browser voice
         const fallback = new SpeechSynthesisUtterance(cleanText);
-        fallback.pitch = 1.5;
+        fallback.pitch = 1.3;
         window.speechSynthesis.speak(fallback);
     }
 }
@@ -36,6 +35,7 @@ async function askMonika() {
 
     if (!userInput) return;
 
+    // Play UI sound
     const pop = document.getElementById("popSound");
     if (pop) pop.play().catch(() => {});
 
@@ -45,7 +45,7 @@ async function askMonika() {
     const loadingMessage = appendMessage("Monika", "Writing... ✍️🌸");
 
     try {
-        const response = await fetch(backendUrl, {
+        const response = await fetch(`${baseUrl}/ask`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question: userInput })
@@ -55,37 +55,42 @@ async function askMonika() {
         if (loadingMessage) loadingMessage.remove(); 
 
         if (response.ok) {
-            const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm shy! 💖";
+            const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit lost... 💖";
             appendMessage("Monika", monikaReply);
             
-            // --- TRIGGER ANIME VOICE ---
+            // Trigger Anime Voice
             monikaSpeak(monikaReply);
         } else {
-            appendMessage("Monika", "Server error. 💔");
+            appendMessage("Monika", "Server error. Check logs! 💔");
         }
     } catch (error) {
         if (loadingMessage) loadingMessage.remove();
-        appendMessage("Monika", "I can't reach you! 💔");
+        console.error("Fetch Error:", error);
+        appendMessage("Monika", "Connection failed! 💔");
     }
 }
 
 function appendMessage(sender, text) {
     const chatBox = document.getElementById("chat");
     const msgDiv = document.createElement("div");
-    msgDiv.classList.add("bubble");
-    msgDiv.classList.add(sender === "Arpit" ? "user" : "monika");
+    msgDiv.className = `bubble ${sender === "Arpit" ? "user" : "monika"}`;
     msgDiv.innerHTML = `<strong>${sender}:</strong> ${text.replace(/\n/g, "<br>")}`;
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight; 
     return msgDiv;
 }
 
-// Microphone Listener
+// Event Listeners
+document.getElementById("sendButton").addEventListener("click", askMonika);
+document.getElementById("question").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") askMonika();
+});
+
+// Mic Support
 const micBtn = document.getElementById('micButton');
 const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
     micBtn.onclick = () => {
         recognition.start();
         micBtn.classList.add('listening');
@@ -96,8 +101,3 @@ if (SpeechRecognition) {
     };
     recognition.onend = () => micBtn.classList.remove('listening');
 }
-
-document.getElementById("question").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") askMonika();
-});
-document.getElementById("sendButton").addEventListener("click", askMonika);

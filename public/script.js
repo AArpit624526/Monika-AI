@@ -2,39 +2,44 @@
 const baseUrl = "https://monika-ai-0jpf.onrender.com";
 let isLiveMode = false; // Tracks if we are in the "continuous" voice mode
 
-// --- 1. ElevenLabs Anime Voice Function ---
-async function monikaSpeak(text, voiceEnabled = false) {
-    // Only speak if we are in Live Mode (voiceEnabled will be true)
+// --- 1. Browser-Based Web Speech Function ---
+function monikaSpeak(text, voiceEnabled = false) {
+    // Only speak if we are in Live Mode or voice was explicitly requested
     if (!voiceEnabled) return; 
 
     // Remove mood tags [HAPPY] etc. for cleaner speech
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
 
-    try {
-        const response = await fetch(`${baseUrl}/voice`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: cleanText })
-        });
+    // Cancel any current speech so it doesn't overlap
+    window.speechSynthesis.cancel();
 
-        if (!response.ok) throw new Error("Voice API failed");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // --- MONIKA'S VOICE SETTINGS ---
+    utterance.pitch = 1.45; // High pitch for that "Anime/Cute" vibe
+    utterance.rate = 1.05;  // Slightly faster, energetic talking
+    utterance.volume = 1.0;
 
-        const blob = await response.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        
-        // LOOP LOGIC: When she stops talking, turn the mic back on automatically
-        audio.onended = () => {
-            if (isLiveMode) {
-                console.log("Monika finished. Listening for Arpit...");
-                startListening();
-            }
-        };
-        
-        audio.play().catch(e => console.log("Click the page once to enable audio!"));
-    } catch (error) {
-        console.error("Voice Error:", error);
-    }
+    // Try to pick a high-quality female voice from the browser
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => 
+        v.name.includes("Google US English") || 
+        v.name.includes("Female") || 
+        v.name.includes("Zira") ||
+        v.name.includes("Samantha")
+    );
+
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    // LOOP LOGIC: When she stops talking, turn the mic back on automatically
+    utterance.onend = () => {
+        if (isLiveMode) {
+            console.log("Monika finished. Listening for Arpit...");
+            startListening();
+        }
+    };
+    
+    window.speechSynthesis.speak(utterance);
 }
 
 // --- 2. Main Chat Function ---
@@ -73,7 +78,7 @@ async function askMonika(isFromVoice = false) {
 
             appendMessage("Monika", monikaReply);
             
-            // Trigger Anime Voice (only if called from mic)
+            // Trigger Browser Voice
             monikaSpeak(monikaReply, isFromVoice);
         } else {
             appendMessage("Monika", "Server error. Check logs! 💔");
@@ -110,18 +115,17 @@ function startListening() {
 // Mic Button Toggle
 micBtn.onclick = () => {
     if (!isLiveMode) {
-        // TURN LIVE MODE ON
         isLiveMode = true;
-        micBtn.classList.add('listening'); // Triggers the pulse CSS
+        micBtn.classList.add('listening');
         
         const greeting = "What would you like to talk about today, Arpit?";
         appendMessage("Monika", greeting);
-        monikaSpeak(greeting, true); // Speaks the greeting to start the loop
+        monikaSpeak(greeting, true); 
     } else {
-        // TURN LIVE MODE OFF
         isLiveMode = false;
         micBtn.classList.remove('listening');
         if (recognition) recognition.stop();
+        window.speechSynthesis.cancel(); // Stops her if she's still talking
     }
 };
 
@@ -135,6 +139,11 @@ function appendMessage(sender, text) {
     chatBox.scrollTop = chatBox.scrollHeight; 
     return msgDiv;
 }
+
+// Load voices (crucial for Chrome/Edge)
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
 
 // Manual Typing Listeners (Always SILENT)
 document.getElementById("sendButton").addEventListener("click", () => askMonika(false));

@@ -1,8 +1,12 @@
 // Ensure this is just the base URL without /ask at the end
 const baseUrl = "https://monika-ai-0jpf.onrender.com";
+let isLiveMode = false; // Tracks if we are in the "continuous" voice mode
 
-// --- ElevenLabs Anime Voice Function ---
-async function monikaSpeak(text) {
+// --- 1. ElevenLabs Anime Voice Function ---
+async function monikaSpeak(text, voiceEnabled = false) {
+    // Only speak if we are in Live Mode (voiceEnabled will be true)
+    if (!voiceEnabled) return; 
+
     // Remove mood tags [HAPPY] etc. for cleaner speech
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
 
@@ -19,17 +23,22 @@ async function monikaSpeak(text) {
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         
+        // LOOP LOGIC: When she stops talking, turn the mic back on automatically
+        audio.onended = () => {
+            if (isLiveMode) {
+                console.log("Monika finished. Listening for Arpit...");
+                startListening();
+            }
+        };
+        
         audio.play().catch(e => console.log("Click the page once to enable audio!"));
     } catch (error) {
         console.error("Voice Error:", error);
-        // Fallback to browser voice
-        const fallback = new SpeechSynthesisUtterance(cleanText);
-        fallback.pitch = 1.3;
-        window.speechSynthesis.speak(fallback);
     }
 }
 
-async function askMonika() {
+// --- 2. Main Chat Function ---
+async function askMonika(isFromVoice = false) {
     const inputField = document.getElementById("question");
     const userInput = inputField.value.trim();
 
@@ -56,10 +65,16 @@ async function askMonika() {
 
         if (response.ok) {
             const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit lost... 💖";
+            
+            // Mood Background Logic
+            if (monikaReply.includes("[HAPPY]")) document.body.className = "mood-happy";
+            else if (monikaReply.includes("[LOVING]")) document.body.className = "mood-loving";
+            else document.body.className = "";
+
             appendMessage("Monika", monikaReply);
             
-            // Trigger Anime Voice
-            monikaSpeak(monikaReply);
+            // Trigger Anime Voice (only if called from mic)
+            monikaSpeak(monikaReply, isFromVoice);
         } else {
             appendMessage("Monika", "Server error. Check logs! 💔");
         }
@@ -70,6 +85,47 @@ async function askMonika() {
     }
 }
 
+// --- 3. Speech Recognition & Live Mode Logic ---
+const micBtn = document.getElementById('micButton');
+const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("question").value = transcript;
+        askMonika(true); // 'true' means we want her to speak back
+    };
+}
+
+function startListening() {
+    if (recognition && isLiveMode) {
+        try { recognition.start(); } catch(e) {}
+    }
+}
+
+// Mic Button Toggle
+micBtn.onclick = () => {
+    if (!isLiveMode) {
+        // TURN LIVE MODE ON
+        isLiveMode = true;
+        micBtn.classList.add('listening'); // Triggers the pulse CSS
+        
+        const greeting = "What would you like to talk about today, Arpit?";
+        appendMessage("Monika", greeting);
+        monikaSpeak(greeting, true); // Speaks the greeting to start the loop
+    } else {
+        // TURN LIVE MODE OFF
+        isLiveMode = false;
+        micBtn.classList.remove('listening');
+        if (recognition) recognition.stop();
+    }
+};
+
+// --- 4. UI Helpers ---
 function appendMessage(sender, text) {
     const chatBox = document.getElementById("chat");
     const msgDiv = document.createElement("div");
@@ -80,24 +136,8 @@ function appendMessage(sender, text) {
     return msgDiv;
 }
 
-// Event Listeners
-document.getElementById("sendButton").addEventListener("click", askMonika);
+// Manual Typing Listeners (Always SILENT)
+document.getElementById("sendButton").addEventListener("click", () => askMonika(false));
 document.getElementById("question").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") askMonika();
+    if (e.key === "Enter") askMonika(false);
 });
-
-// Mic Support
-const micBtn = document.getElementById('micButton');
-const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-if (SpeechRecognition) {
-    const recognition = new SpeechRecognition();
-    micBtn.onclick = () => {
-        recognition.start();
-        micBtn.classList.add('listening');
-    };
-    recognition.onresult = (event) => {
-        document.getElementById("question").value = event.results[0][0].transcript;
-        askMonika();
-    };
-    recognition.onend = () => micBtn.classList.remove('listening');
-}

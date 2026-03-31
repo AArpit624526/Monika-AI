@@ -1,4 +1,4 @@
-# 🌸 Monika-AI: Intelligent Anime Companion
+# 🌸 Monika-AI: Intelligent Romatic Companion
 
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)

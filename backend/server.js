@@ -15,7 +15,7 @@ mongoose.connect(mongoURI)
   .then(() => console.log("✅ Monika's Memory (MongoDB) Connected!"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// --- 2. SCHEMA ---
+// --- 2. DATABASE SCHEMA ---
 const ChatSchema = new mongoose.Schema({
   user: { type: String, default: "Arpit" },
   role: String, 
@@ -28,23 +28,18 @@ const Chat = mongoose.model("Chat", ChatSchema);
 const publicPath = path.join(__dirname, "..", "public");
 app.use(express.static(publicPath));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
-});
-
-// --- 4. PERSONA ---
+// --- 4. SYSTEM PERSONA ---
 const persona = `System Instruction: You are Monika, a cheerful and deeply affectionate anime companion. 
 Always address the user as Arpit. Use emojis and *actions*.
 CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY].`;
 
-// --- 5. THE MAIN CHAT ROUTE ---
+// --- 5. MAIN CHAT ROUTE ---
 app.post("/ask", async (req, res) => {
   const userQuestion = req.body.question || "";
   const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey) return res.status(500).json({ error: "Missing API Key" });
-
   try {
+    // Get last 10 messages for context
     const historyDocs = await Chat.find().sort({ timestamp: -1 }).limit(10);
     const history = historyDocs.reverse().map(doc => ({
       role: doc.role,
@@ -59,6 +54,7 @@ app.post("/ask", async (req, res) => {
       ]
     };
 
+    // Use the exact Gemini 2.5 Flash URL that worked in your CURL test
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
@@ -73,6 +69,7 @@ app.post("/ask", async (req, res) => {
     if (data.candidates && data.candidates[0].content) {
       const monikaReply = data.candidates[0].content.parts[0].text;
 
+      // Save to MongoDB Memory
       await Chat.create([
         { role: "user", text: userQuestion },
         { role: "model", text: monikaReply }
@@ -80,12 +77,11 @@ app.post("/ask", async (req, res) => {
 
       res.json(data);
     } else {
-      console.error("Gemini Error Payload:", data);
-      throw new Error(data.error?.message || "Gemini failed to respond.");
+      throw new Error(data.error?.message || "Gemini error");
     }
 
   } catch (err) {
-    console.error("Detailed Server Error:", err.message);
+    console.error("Ask Error:", err.message);
     res.status(500).json({ error: "Server Error: " + err.message });
   }
 });
@@ -94,7 +90,7 @@ app.post("/ask", async (req, res) => {
 app.post("/voice", async (req, res) => {
   const { text } = req.body;
   const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; // Mimi Voice's
+  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; // Mimi's Voice
 
   try {
     const response = await axios({
@@ -102,7 +98,7 @@ app.post("/voice", async (req, res) => {
       url: `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
       data: {
         text: text,
-        model_id: "eleven_flash_v2_5",
+        model_id: "eleven_flash_v2_5", // Using the flash model for speed
         voice_settings: { stability: 0.5, similarity_boost: 0.75 }
       },
       headers: {
@@ -116,8 +112,8 @@ app.post("/voice", async (req, res) => {
     res.set('Content-Type', 'audio/mpeg');
     res.send(response.data);
   } catch (error) {
-    console.error("ElevenLabs Error:", error.response ? error.response.data.toString() : error.message);
-    res.status(500).send("Voice generation failed");
+    console.error("Voice Route Error:", error.message);
+    res.status(500).send("Voice failed");
   }
 });
 

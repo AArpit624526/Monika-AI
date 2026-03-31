@@ -94,7 +94,7 @@ app.post("/ask", async (req, res) => {
 app.post("/voice", async (req, res) => {
   const { text } = req.body;
   const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-  const VOICE_ID = "m7GHBtY0UEqljrKQw2JH"; // Aisha Voice's
+  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; // Mimi Voice's
 
   try {
     const response = await axios({

@@ -16,8 +16,8 @@ function monikaSpeak(text, voiceEnabled = false) {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     
     // --- MONIKA'S VOICE SETTINGS ---
-    utterance.pitch = 1.45; // High pitch for that "Anime/Cute" vibe
-    utterance.rate = 1.05;  // Slightly faster, energetic talking
+    utterance.pitch = 1.6; // High pitch for that "Anime/Cute" vibe
+    utterance.rate = 1.15;  // Slightly faster, energetic talking
     utterance.volume = 1.0;
 
     // Try to pick a high-quality female voice from the browser

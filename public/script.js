@@ -3,30 +3,23 @@ const backendUrl = "https://monika-ai-0jpf.onrender.com/ask";
 // --- Optimized Voice Synthesis Function ---
 function monikaSpeak(text) {
     if ('speechSynthesis' in window) {
-        // Stop any current speaking before starting new reply
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Stop current speech
         
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Fetch all available voices from the browser
         const voices = window.speechSynthesis.getVoices();
         
-        // Priority list for finding a high-quality female voice
-        const monikaVoice = voices.find(v => v.name.includes("Google US English")) || 
-                           voices.find(v => v.name.includes("Samantha")) || 
-                           voices.find(v => v.name.includes("Female")) || 
-                           voices.find(v => v.name.includes("Microsoft Zira")) ||
-                           voices.find(v => v.name.includes("Aria"));
+        // FORCED: Using the high-quality voice you found in your console
+        const monikaVoice = voices.find(v => v.name === "Google UK English Female") || 
+                           voices.find(v => v.name === "Google US English") || 
+                           voices.find(v => v.name.includes("Zira"));
         
         if (monikaVoice) {
             utterance.voice = monikaVoice;
+            console.log("Monika is using voice: " + monikaVoice.name);
         }
         
-        // Personality Settings: Slightly higher pitch for a cute/feminine feel
-        utterance.pitch = 1.3; 
-        utterance.rate = 1.0;  // Normal conversational speed
-        utterance.volume = 1.0;
-        
+        utterance.pitch = 1.3; // Feminine/Cute pitch
+        utterance.rate = 1.0; 
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -38,9 +31,11 @@ async function askMonika() {
 
     if (!userInput) return;
 
-    // 1. Play the pop sound
+    // 1. Play the pop sound (Fixed source in HTML)
     const pop = document.getElementById("popSound");
-    if (pop) pop.play();
+    if (pop) {
+        pop.play().catch(e => console.log("Audio play blocked by browser. Click the screen once!"));
+    }
 
     // 2. Display Arpit's message
     appendMessage("Arpit", userInput);
@@ -57,63 +52,66 @@ async function askMonika() {
         });
 
         const data = await response.json();
-        
         if (loadingMessage) loadingMessage.remove(); 
 
         if (response.ok) {
-            // Parsing Gemini response structure
             const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit shy right now... try again? 💖";
-            
             appendMessage("Monika", monikaReply);
             
-            // Trigger Voice Output
+            // Trigger Voice
             monikaSpeak(monikaReply);
-
         } else {
-            const errorMsg = "My heart is a bit heavy right now (Server Error). Try again in a second! 💔";
-            appendMessage("Monika", errorMsg);
-            monikaSpeak(errorMsg);
+            appendMessage("Monika", "Server error. Try again! 💔");
         }
-
     } catch (error) {
         console.error("Error:", error);
         if (loadingMessage) loadingMessage.remove();
-        const failMsg = "I can't reach you, Arpit! *frowns* Wait 30 seconds for the server to wake up. 💔";
-        appendMessage("Monika", failMsg);
-        monikaSpeak(failMsg);
+        appendMessage("Monika", "I can't reach you! Wait for the server to wake up. 💔");
     }
 }
 
 function appendMessage(sender, text) {
     const chatBox = document.getElementById("chat");
     const msgDiv = document.createElement("div");
-    
     msgDiv.classList.add("bubble");
     msgDiv.classList.add(sender === "Arpit" ? "user" : "monika");
-    
-    // Formatting: Handle line breaks
     msgDiv.innerHTML = `<strong>${sender}:</strong> ${text.replace(/\n/g, "<br>")}`;
-    
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight; 
     return msgDiv;
 }
 
-// Event Listener for 'Enter' key
-document.getElementById("question").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-        e.preventDefault(); 
+// Microphone Listener
+const micBtn = document.getElementById('micButton');
+const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+
+if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+
+    micBtn.onclick = () => {
+        recognition.start();
+        micBtn.classList.add('listening');
+    };
+
+    recognition.onresult = (event) => {
+        document.getElementById("question").value = event.results[0][0].transcript;
         askMonika();
-    }
-});
+    };
 
-// Send Button Click
-document.getElementById("sendButton").addEventListener("click", askMonika);
-
-// Force voices to load on page load (Crucial for Chrome)
-if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-        console.log("Voices updated and ready!");
+    recognition.onend = () => {
+        micBtn.classList.remove('listening');
     };
 }
+
+// Enter Key Listener
+document.getElementById("question").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") askMonika();
+});
+
+document.getElementById("sendButton").addEventListener("click", askMonika);
+
+// Force voices to load
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};

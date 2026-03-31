@@ -1,47 +1,47 @@
 const backendUrl = "https://monika-ai-0jpf.onrender.com/ask";
 
-// --- Optimized Voice Synthesis Function ---
-function monikaSpeak(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop current speech
+// --- NEW: ElevenLabs Anime Voice Function ---
+async function monikaSpeak(text) {
+    const cleanText = text.replace(/\[.*?\]/g, "").trim();
+
+    try {
+        // 2. Call the /voice route on your server
+        const response = await fetch(backendUrl.replace('/ask', '/voice'), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: cleanText })
+        });
+
+        if (!response.ok) throw new Error("Voice failed");
+
+        // 3. Play the binary audio data
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
         
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voices = window.speechSynthesis.getVoices();
+        audio.play().catch(e => console.log("Audio play blocked. Click once!"));
+    } catch (error) {
+        console.error("ElevenLabs Error, falling back to robot:", error);
         
-        // FORCED: Using the high-quality voice you found in your console
-        const monikaVoice = voices.find(v => v.name === "Google UK English Female") || 
-                           voices.find(v => v.name === "Google US English") || 
-                           voices.find(v => v.name.includes("Zira"));
-        
-        if (monikaVoice) {
-            utterance.voice = monikaVoice;
-            console.log("Monika is using voice: " + monikaVoice.name);
-        }
-        
-        utterance.pitch = 1.3; // Feminine/Cute pitch
-        utterance.rate = 1.0; 
-        window.speechSynthesis.speak(utterance);
+        // Fallback to browser voice if ElevenLabs fails/out of credits
+        const fallback = new SpeechSynthesisUtterance(cleanText);
+        fallback.pitch = 1.5;
+        window.speechSynthesis.speak(fallback);
     }
 }
 
 async function askMonika() {
     const inputField = document.getElementById("question");
-    const chatBox = document.getElementById("chat");
     const userInput = inputField.value.trim();
 
     if (!userInput) return;
 
-    // 1. Play the pop sound (Fixed source in HTML)
     const pop = document.getElementById("popSound");
-    if (pop) {
-        pop.play().catch(e => console.log("Audio play blocked by browser. Click the screen once!"));
-    }
+    if (pop) pop.play().catch(() => {});
 
-    // 2. Display Arpit's message
     appendMessage("Arpit", userInput);
     inputField.value = ""; 
 
-    // 3. Show "Writing..." indicator
     const loadingMessage = appendMessage("Monika", "Writing... ✍️🌸");
 
     try {
@@ -55,18 +55,17 @@ async function askMonika() {
         if (loadingMessage) loadingMessage.remove(); 
 
         if (response.ok) {
-            const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit shy right now... try again? 💖";
+            const monikaReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm shy! 💖";
             appendMessage("Monika", monikaReply);
             
-            // Trigger Voice
+            // --- TRIGGER ANIME VOICE ---
             monikaSpeak(monikaReply);
         } else {
-            appendMessage("Monika", "Server error. Try again! 💔");
+            appendMessage("Monika", "Server error. 💔");
         }
     } catch (error) {
-        console.error("Error:", error);
         if (loadingMessage) loadingMessage.remove();
-        appendMessage("Monika", "I can't reach you! Wait for the server to wake up. 💔");
+        appendMessage("Monika", "I can't reach you! 💔");
     }
 }
 
@@ -84,34 +83,21 @@ function appendMessage(sender, text) {
 // Microphone Listener
 const micBtn = document.getElementById('micButton');
 const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-
 if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-
     micBtn.onclick = () => {
         recognition.start();
         micBtn.classList.add('listening');
     };
-
     recognition.onresult = (event) => {
         document.getElementById("question").value = event.results[0][0].transcript;
         askMonika();
     };
-
-    recognition.onend = () => {
-        micBtn.classList.remove('listening');
-    };
+    recognition.onend = () => micBtn.classList.remove('listening');
 }
 
-// Enter Key Listener
 document.getElementById("question").addEventListener("keydown", (e) => {
     if (e.key === "Enter") askMonika();
 });
-
 document.getElementById("sendButton").addEventListener("click", askMonika);
-
-// Force voices to load
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};

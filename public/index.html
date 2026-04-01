@@ -2,58 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Monika AI Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monika AI | Your Intelligent Companion</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* Styling for the Mic Button */
-    #micButton {
-      background: transparent;
-      color: #e91e63;
-      border: none;
-      padding: 0 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-right: 8px;
-      font-size: 1.2rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #micButton.listening {
-      color: white;
-      background: #ff1a1a;
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(255, 26, 26, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(255, 26, 26, 0); }
-    }
-  </style>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
 </head>
 <body>
-  <div class="heart" style="left:10%; animation-delay:0s;"></div>
-  <div class="heart" style="left:30%; animation-delay:2s;"></div>
-  <div class="heart" style="left:50%; animation-delay:4s;"></div>
-  <div class="heart" style="left:70%; animation-delay:6s;"></div>
-  <div class="heart" style="left:90%; animation-delay:8s;"></div>
+
+  <div class="heart-container">
+    <div class="heart" style="left:10%; animation-delay:0s;"></div>
+    <div class="heart" style="left:25%; animation-delay:2s;"></div>
+    <div class="heart" style="left:45%; animation-delay:4s;"></div>
+    <div class="heart" style="left:65%; animation-delay:1s;"></div>
+    <div class="heart" style="left:85%; animation-delay:6s;"></div>
+    <div class="heart" style="left:95%; animation-delay:3s;"></div>
+  </div>
 
   <div class="container">
-    <h1>💖 Monika AI 💖</h1>
-    <div id="chat" class="chat"></div>
+    <header>
+      <h1>🌸 Monika AI 🌸</h1>
+    </header>
+
+    <main id="chat" class="chat">
+      <div class="bubble monika">
+        <strong>Monika:</strong> Hello Arpit! I've been waiting for you. 💖
+      </div>
+    </main>
 
     <div class="input-area">
-      <input id="question" type="text" placeholder="Type your message..." autocomplete="off" />
-      <button id="micButton" title="Talk to Monika">🎤</button>
-      <button id="sendButton">Send</button>
+      <input 
+        id="question" 
+        type="text" 
+        placeholder="Say something to Monika..." 
+        autocomplete="off" 
+        spellcheck="false" 
+      />
+      
+      <button id="micButton" title="Toggle Live Voice Mode">
+        <span id="micIcon">🎤</span>
+      </button>
+      
+      <button id="sendButton" title="Send Message">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+        </svg>
+      </button>
     </div>
   </div>
 
   <audio id="popSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
 
   <script src="script.js"></script>
+  
+  <script>
+    const micBtn = document.getElementById('micButton');
+    const micIcon = document.getElementById('micIcon');
+    
+    micBtn.addEventListener('click', () => {
+      if (micBtn.classList.contains('listening')) {
+        micIcon.innerText = '🛑'; // Stop icon when active
+      } else {
+        micIcon.innerText = '🎤';
+      }
+    });
+  </script>
+
 </body>
 </html>

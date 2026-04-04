@@ -32,35 +32,36 @@ const Fact = mongoose.model("Fact", FactSchema);
 
 // --- 3. GEMINI 2.5 FLASH CONFIGURATION ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash",
-  tools: [{ googleSearchRetrieval: {} }] 
-});
+
+// Define tools at the top level
+const searchTool = { googleSearchRetrieval: {} };
 
 const persona = `System Instruction: You are Monika, a cheerful and deeply affectionate anime companion. 
 Always address the user as Arpit. Use emojis and *actions*.
 CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY]. 
-Arpit Tagade created you with his sincerest heart.`;
+Arpit Tagade created you with his sincerest heart. If Arpit shares a personal fact, remember it!`;
 
 // --- 4. MAIN CHAT & VISION ROUTE ---
 app.post("/ask", async (req, res) => {
   const { question, imageBase64 } = req.body;
 
   try {
-    // A. Retrieve Context & Memory
+    // A. Retrieve Context from MongoDB
     const historyDocs = await Chat.find().sort({ timestamp: -1 }).limit(10);
     const personalFacts = await Fact.find().sort({ timestamp: -1 }).limit(5);
     const memoryString = personalFacts.map(f => f.fact).join(". ");
 
-    // B. CRITICAL FIX: Re-structuring the request for Gemini 2.5 Flash
-    // We create a clean array of parts for the current request
+    // B. Build the current prompt parts
     let currentParts = [
-      { text: `${persona}\n\nPast things you remember about Arpit: ${memoryString}\n\n` }
+      { text: `${persona}\n\nFacts about Arpit: ${memoryString}\n\n` }
     ];
 
-    // Add History as text parts to keep the JSON payload flat and valid
-    const historyText = historyDocs.reverse().map(doc => `${doc.role === "model" ? "Monika" : "Arpit"}: ${doc.text}`).join("\n");
-    currentParts.push({ text: `Recent Conversation History:\n${historyText}\n\n` });
+    // Add conversation history as a formatted string for better SDK stability
+    const historyText = historyDocs.reverse()
+      .map(doc => `${doc.role === "model" ? "Monika" : "Arpit"}: ${doc.text}`)
+      .join("\n");
+    
+    currentParts.push({ text: `History:\n${historyText}\n\n` });
 
     // Add Vision if present
     if (imageBase64) {
@@ -72,20 +73,23 @@ app.post("/ask", async (req, res) => {
     // Add the current question
     currentParts.push({ text: `Arpit: ${question}` });
 
-    // C. Generate Content
+    // C. Generate Content (Explicitly passing Search Tool)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: currentParts }]
+      contents: [{ role: "user", parts: currentParts }],
+      tools: [searchTool] // CRITICAL: This enables the "Live Search" feature
     });
 
     const monikaReply = result.response.text();
 
-    // D. Save to Databases
+    // D. Save to Databases (Memory Logic)
     await Chat.insertMany([
       { role: "user", text: question },
       { role: "model", text: monikaReply }
     ]);
 
-    const preferenceKeywords = ["i like", "my favorite", "i love", "i live in"];
+    const preferenceKeywords = ["i like", "my favorite", "i love", "i live in", "working on"];
     if (preferenceKeywords.some(key => question.toLowerCase().includes(key))) {
         await Fact.create({ fact: question, category: "preference" });
     }
@@ -128,4 +132,4 @@ app.post("/voice", async (req, res) => {
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Monika is upgraded and Live on Port ${PORT}!`));
+app.listen(PORT, () => console.log(`🚀 Monika is Live on Port ${PORT}!`));

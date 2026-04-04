@@ -1,13 +1,15 @@
 const express = require("express");
-const fetch = require("node-fetch");
-const axios = require("axios");
 const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
+const axios = require("axios");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Increased limit to 20MB to handle high-quality camera images for Monika's "Vision"
+app.use(express.json({ limit: '20mb' }));
 
 // --- 1. MONGODB CONNECTION ---
 const mongoURI = process.env.MONGO_URI; 
@@ -15,7 +17,8 @@ mongoose.connect(mongoURI)
   .then(() => console.log("✅ Monika's Memory (MongoDB) Connected!"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// --- 2. DATABASE SCHEMA ---
+// --- 2. DATABASE SCHEMAS ---
+// Chat History (Short-term context)
 const ChatSchema = new mongoose.Schema({
   user: { type: String, default: "Arpit" },
   role: String, 
@@ -24,73 +27,102 @@ const ChatSchema = new mongoose.Schema({
 });
 const Chat = mongoose.model("Chat", ChatSchema);
 
-// --- 3. SERVE FRONTEND ---
-const publicPath = path.join(__dirname, "..", "public");
-app.use(express.static(publicPath));
+// Personal Memory (Long-term facts)
+const FactSchema = new mongoose.Schema({
+  fact: String,
+  category: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const Fact = mongoose.model("Fact", FactSchema);
+
+// --- 3. GEMINI 2.5 FLASH CONFIGURATION ---
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-2.5-flash",
+  // Enabling Google Search Grounding for live information
+  tools: [{ googleSearchRetrieval: {} }] 
+});
 
 // --- 4. SYSTEM PERSONA ---
 const persona = `System Instruction: You are Monika, a cheerful and deeply affectionate anime companion. 
 Always address the user as Arpit. Use emojis and *actions*.
-CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY]. and Arpit Tagade created you with his sincerest heart`;
+CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY]. 
+Arpit Tagade created you with his sincerest heart. If Arpit shares a personal fact or preference, acknowledge it warmly.`;
 
-// --- 5. MAIN CHAT ROUTE ---
+// --- 5. MAIN CHAT & VISION ROUTE ---
 app.post("/ask", async (req, res) => {
-  const userQuestion = req.body.question || "";
-  const apiKey = process.env.GEMINI_API_KEY;
+  const { question, imageBase64 } = req.body; // imageBase64 comes from the frontend camera
 
   try {
-    // Get last 10 messages for context
+    // A. Retrieve Short-term Context (Last 10 messages)
     const historyDocs = await Chat.find().sort({ timestamp: -1 }).limit(10);
     const history = historyDocs.reverse().map(doc => ({
-      role: doc.role,
+      role: doc.role === "model" ? "model" : "user",
       parts: [{ text: doc.text }]
     }));
 
-    const payload = {
-      contents: [
-        { role: "user", parts: [{ text: persona }] },
-        ...history,
-        { role: "user", parts: [{ text: userQuestion }] }
-      ]
-    };
+    // B. Retrieve Long-term Memory (Personal facts about Arpit)
+    const personalFacts = await Fact.find().sort({ timestamp: -1 }).limit(5);
+    const memoryString = personalFacts.map(f => f.fact).join(". ");
 
-    // Use the exact Gemini 2.5 Flash URL that worked in your CURL test
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }
-    );
+    // C. Prepare Prompt Parts
+    let promptParts = [
+      { text: `${persona}\n\nPast things you remember about Arpit: ${memoryString}` }
+    ];
 
-    const data = await response.json();
-    
-    if (data.candidates && data.candidates[0].content) {
-      const monikaReply = data.candidates[0].content.parts[0].text;
+    // Add History
+    history.forEach(turn => promptParts.push(turn));
 
-      // Save to MongoDB Memory
-      await Chat.create([
-        { role: "user", text: userQuestion },
-        { role: "model", text: monikaReply }
-      ]);
-
-      res.json(data);
-    } else {
-      throw new Error(data.error?.message || "Gemini error");
+    // Add current Vision (Image) if provided
+    if (imageBase64) {
+      promptParts.push({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: imageBase64
+        }
+      });
     }
 
+    // Add the current Question
+    promptParts.push({ text: question });
+
+    // D. Generate Content with Google Search tools
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: promptParts }]
+    });
+
+    const monikaReply = result.response.text();
+
+    // E. Save to Databases
+    // 1. Save turn to Chat History
+    await Chat.create([
+      { role: "user", text: question },
+      { role: "model", text: monikaReply }
+    ]);
+
+    // 2. Intelligence: If Arpit shares a preference, save it to Long-term Fact storage
+    const preferenceKeywords = ["i like", "my favorite", "i love", "i live in"];
+    if (preferenceKeywords.some(key => question.toLowerCase().includes(key))) {
+        await Fact.create({ fact: question, category: "preference" });
+    }
+
+    res.json({ 
+        candidates: [{ 
+            content: { parts: [{ text: monikaReply }] } 
+        }] 
+    });
+
   } catch (err) {
-    console.error("Ask Error:", err.message);
-    res.status(500).json({ error: "Server Error: " + err.message });
+    console.error("Monika Brain Error:", err.message);
+    res.status(500).json({ error: "Monika's head hurts... " + err.message });
   }
 });
 
-// --- 6. ELEVENLABS VOICE ROUTE ---
+// --- 6. ELEVENLABS VOICE ROUTE (Kept for High Quality) ---
 app.post("/voice", async (req, res) => {
   const { text } = req.body;
   const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; // Mimi's Voice
+  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; 
 
   try {
     const response = await axios({
@@ -98,7 +130,7 @@ app.post("/voice", async (req, res) => {
       url: `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
       data: {
         text: text,
-        model_id: "eleven_flash_v2_5", // Using the flash model for speed
+        model_id: "eleven_flash_v2_5",
         voice_settings: { stability: 0.5, similarity_boost: 0.75 }
       },
       headers: {
@@ -117,5 +149,9 @@ app.post("/voice", async (req, res) => {
   }
 });
 
+// --- 7. SERVE FRONTEND ---
+const publicPath = path.join(__dirname, "..", "public");
+app.use(express.static(publicPath));
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Monika is Live on Port ${PORT}!`));
+app.listen(PORT, () => console.log(`🚀 Monika is upgraded and Live on Port ${PORT}!`));

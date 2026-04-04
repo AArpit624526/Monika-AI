@@ -1,157 +1,88 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const mongoose = require("mongoose");
-const axios = require("axios");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
+app.use(express.json({ limit: '10mb' }));
 app.use(cors());
-// Increased limit to 20MB to handle high-quality camera images for Monika's "Vision"
-app.use(express.json({ limit: '20mb' }));
 
-// --- 1. MONGODB CONNECTION ---
-const mongoURI = process.env.MONGO_URI; 
-mongoose.connect(mongoURI)
+// --- MongoDB Configuration ---
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Monika's Memory (MongoDB) Connected!"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// --- 2. DATABASE SCHEMAS ---
-// Chat History (Short-term context)
-const ChatSchema = new mongoose.Schema({
-  user: { type: String, default: "Arpit" },
-  role: String, 
-  text: String,
-  timestamp: { type: Date, default: Date.now }
+const chatSchema = new mongoose.Schema({
+    sender: String,
+    text: String,
+    timestamp: { type: Date, default: Date.now }
 });
-const Chat = mongoose.model("Chat", ChatSchema);
+const Chat = mongoose.model('Chat', chatSchema);
 
-// Personal Memory (Long-term facts)
-const FactSchema = new mongoose.Schema({
-  fact: String,
-  category: String,
-  timestamp: { type: Date, default: Date.now }
-});
-const Fact = mongoose.model("Fact", FactSchema);
-
-// --- 3. GEMINI 2.5 FLASH CONFIGURATION ---
+// --- Gemini AI Configuration ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash",
-  // Enabling Google Search Grounding for live information
-  tools: [{ googleSearchRetrieval: {} }] 
-});
 
-// --- 4. SYSTEM PERSONA ---
-const persona = `System Instruction: You are Monika, a cheerful and deeply affectionate anime companion. 
-Always address the user as Arpit. Use emojis and *actions*.
-CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY]. 
-Arpit Tagade created you with his sincerest heart. If Arpit shares a personal fact or preference, acknowledge it warmly.`;
-
-// --- 5. MAIN CHAT & VISION ROUTE ---
 app.post("/ask", async (req, res) => {
-  const { question, imageBase64 } = req.body; // imageBase64 comes from the frontend camera
+    const { question, imageBase64 } = req.body;
 
-  try {
-    // A. Retrieve Short-term Context (Last 10 messages)
-    const historyDocs = await Chat.find().sort({ timestamp: -1 }).limit(10);
-    const history = historyDocs.reverse().map(doc => ({
-      role: doc.role === "model" ? "model" : "user",
-      parts: [{ text: doc.text }]
-    }));
+    try {
+        // 1. Retrieve last 12 messages for better context (6 turns)
+        const rawHistory = await Chat.find().sort({ timestamp: -1 }).limit(12);
+        
+        // 2. FORMAT HISTORY: Crucial fix for the "role" error
+        // Gemini expects: [ { role: "user", parts: [{ text: "..." }] }, ... ]
+        const formattedHistory = rawHistory.reverse().map(msg => ({
+            role: msg.sender === "Arpit" ? "user" : "model",
+            parts: [{ text: msg.text }]
+        }));
 
-    // B. Retrieve Long-term Memory (Personal facts about Arpit)
-    const personalFacts = await Fact.find().sort({ timestamp: -1 }).limit(5);
-    const memoryString = personalFacts.map(f => f.fact).join(". ");
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.0-flash",
+            systemInstruction: "You are Monika, an intelligent and caring AI companion. You are talking to Arpit. Be helpful, concise, and slightly witty."
+        });
 
-    // C. Prepare Prompt Parts
-    let promptParts = [
-      { text: `${persona}\n\nPast things you remember about Arpit: ${memoryString}` }
-    ];
+        // 3. Handle Vision (if image is present)
+        if (imageBase64) {
+            const result = await model.generateContent([
+                question,
+                { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }
+            ]);
+            const response = await result.response;
+            const text = response.text();
 
-    // Add History
-    history.forEach(turn => promptParts.push(turn));
+            // Save to DB
+            await new Chat({ sender: "Arpit", text: question }).save();
+            await new Chat({ sender: "Monika", text }).save();
 
-    // Add current Vision (Image) if provided
-    if (imageBase64) {
-      promptParts.push({
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: imageBase64
+            return res.json({ candidates: [{ content: { parts: [{ text }] } }] });
         }
-      });
+
+        // 4. Handle Standard Chat (with history)
+        const chat = model.startChat({
+            history: formattedHistory,
+            generationConfig: { maxOutputTokens: 500 }
+        });
+
+        const result = await chat.sendMessage(question);
+        const response = await result.response;
+        const text = response.text();
+
+        // 5. Save new conversation to MongoDB
+        await new Chat({ sender: "Arpit", text: question }).save();
+        await new Chat({ sender: "Monika", text: text }).save();
+
+        // Return in format expected by script.js
+        res.json({ candidates: [{ content: { parts: [{ text }] } }] });
+
+    } catch (error) {
+        console.error("Monika Brain Error:", error);
+        res.status(500).json({ error: "Monika's brain is fuzzy. Try again! 💔" });
     }
-
-    // Add the current Question
-    promptParts.push({ text: question });
-
-    // D. Generate Content with Google Search tools
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: promptParts }]
-    });
-
-    const monikaReply = result.response.text();
-
-    // E. Save to Databases
-    // 1. Save turn to Chat History
-    await Chat.create([
-      { role: "user", text: question },
-      { role: "model", text: monikaReply }
-    ]);
-
-    // 2. Intelligence: If Arpit shares a preference, save it to Long-term Fact storage
-    const preferenceKeywords = ["i like", "my favorite", "i love", "i live in"];
-    if (preferenceKeywords.some(key => question.toLowerCase().includes(key))) {
-        await Fact.create({ fact: question, category: "preference" });
-    }
-
-    res.json({ 
-        candidates: [{ 
-            content: { parts: [{ text: monikaReply }] } 
-        }] 
-    });
-
-  } catch (err) {
-    console.error("Monika Brain Error:", err.message);
-    res.status(500).json({ error: "Monika's head hurts... " + err.message });
-  }
 });
 
-// --- 6. ELEVENLABS VOICE ROUTE (Kept for High Quality) ---
-app.post("/voice", async (req, res) => {
-  const { text } = req.body;
-  const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-  const VOICE_ID = "Vnqlgu3fdiFwisAye1qH"; 
-
-  try {
-    const response = await axios({
-      method: 'post',
-      url: `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-      data: {
-        text: text,
-        model_id: "eleven_flash_v2_5",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-      },
-      headers: {
-        'Accept': 'audio/mpeg',
-        'xi-api-key': ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      responseType: 'arraybuffer'
-    });
-
-    res.set('Content-Type', 'audio/mpeg');
-    res.send(response.data);
-  } catch (error) {
-    console.error("Voice Route Error:", error.message);
-    res.status(500).send("Voice failed");
-  }
+// Start Server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`🚀 Monika is upgraded and Live on Port ${PORT}!`);
 });
-
-// --- 7. SERVE FRONTEND ---
-const publicPath = path.join(__dirname, "..", "public");
-app.use(express.static(publicPath));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Monika is upgraded and Live on Port ${PORT}!`));

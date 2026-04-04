@@ -1,36 +1,40 @@
-# 🌸 Monika-AI: Intelligent Romatic Companion
+# 🌸 Monika-AI: Vision-Powered Intelligent Companion
 
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Gemini AI](https://img.shields.io/badge/Gemini_2.5_Flash-8E75B2?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_1.5_Flash-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**Monika-AI** is a personality-driven, interactive companion inspired by *Doki Doki Literature Club*. Built with a focus on low-latency conversation, this project uses the latest **Gemini 2.5 Flash API** and browser-native speech synthesis to create a seamless "Live Mode" experience.
+**Monika-AI** is a high-performance, personality-driven interactive companion. Leveraging **Gemini 1.5 Flash** and advanced browser APIs, Monika doesn't just chat—she **sees**, **hears**, and **follows** you across your desktop with a custom Picture-in-Picture interface.
 
-[🚀 Try the Live Demo](https://monika-ai-0jpf.onrender.com)
-
----
-
-## ✨ Key Features
-
-- **🧠 Advanced Intelligence:** Powered by `gemini-2.5-flash` for rapid, charming, and context-aware responses.
-- **🎙️ Live Voice-to-Voice:** Includes a "Live Mode" that uses the browser's `SpeechRecognition` and `SpeechSynthesis` for a hands-free conversation loop.
-- **💾 Long-Term Memory:** Integrated with **MongoDB** (Monika's Memory) to store chat history and maintain continuity.
-- **🎭 Dynamic Mood System:** Real-time background transitions and animations triggered by AI emotion tags (`[HAPPY]`, `[LOVING]`, etc.).
-- **⚡ Optimized for Performance:** Zero-latency voice generation using the Web Speech API (no external API calls for audio).
+[🚀 Launch Live Demo](https://monika-ai-0jpf.onrender.com)
 
 ---
 
-## 🛠️ Tech Stack
+## 🔥 New & Advanced Features
 
-### Frontend
-- **HTML5/CSS3:** Custom "Soft Heart" UI with CSS keyframe animations.
-- **JavaScript (ES6+):** Handle real-time DOM updates and Web Speech API.
+- **👁️ Vision Engine:** Monika can now see through your webcam. Show her objects, code, or your surroundings, and she will react in real-time.
+- **🖼️ Floating Window (PiP):** Multitask with ease. Use the **Document Picture-in-Picture API** to pop Monika into a floating, always-on-top window while you code or game.
+- **🌌 Cyber-Sakura UI:** A gorgeous "Glassmorphism" interface featuring:
+  - **3D Mouse Parallax:** The UI panels tilt and react to your cursor movement.
+  - **Dynamic Mood Engine:** Backgrounds and glows shift colors based on Monika's emotions (`[HAPPY]`, `[LOVING]`, `[THINKING]`).
+  - **Scanline Effects:** A sci-fi HUD overlay for the vision feed.
+- **🎙️ Seamless Voice Loop:** Zero-latency speech synthesis combined with hands-free `SpeechRecognition`.
+- **💾 Persistent Memory:** MongoDB integration ensures she remembers your name, projects (like your Pothole Portal or CandyRobot), and past conversations.
 
-### Backend
-- **Node.js & Express:** Robust API routing.
-- **Mongoose:** Object modeling for MongoDB session storage.
-- **Google Generative AI SDK:** Seamless integration with Gemini models.
+---
+
+## 🛠️ Technical Overhaul
+
+### High-Performance Frontend
+- **Document PiP API:** Advanced window detachment for "Always-on-Top" functionality.
+- **CSS3 Glassmorphism:** Deep blurs, saturation filters, and `cubic-bezier` transitions.
+- **Web Speech API:** Native browser processing to keep server CPU usage low.
+
+### Optimized Backend
+- **Gemini 1.5 Flash:** Optimized for high-speed multimodal (Text + Image) reasoning.
+- **Buffered Image Processing:** Secure Base64 handling for vision frames.
+- **Mongoose ODM:** Structured conversation logging and user profiling.
 
 ---
 
@@ -39,69 +43,60 @@
 ```text
 Monika-AI/
 ├── backend/
-│   ├── server.js        # Express server, Gemini API & MongoDB logic
-│   └── package.json     # Dependencies (express, mongoose, axios)
+│   ├── server.js        # Express, Gemini Vision Logic & MongoDB
+│   └── package.json     # Node dependencies
 ├── public/
-│   ├── index.html       # Monika UI
-│   ├── style.css        # Mood-based animations & heart-pulse effects
-│   └── script.js        # Voice-to-Voice loop & frontend logic
+│   ├── index.html       # Multimodal UI & PiP entry point
+│   ├── style.css        # 3D effects, Glassmorphism & Mood themes
+│   └── script.js        # Vision capture, PiP Logic & Voice Loop
 ```
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Installation
 
-1. **Clone the Repo**
+1. **Clone & Install**
    ```bash
    git clone [https://github.com/tagadearpit/Monika-AI.git](https://github.com/tagadearpit/Monika-AI.git)
-   cd Monika-AI
-   ```
-
-2. **Backend Configuration**
-   ```bash
-   cd backend
+   cd Monika-AI/backend
    npm install
    ```
-   Create a `.env` file in the `backend` folder:
+
+2. **Environment Setup**
+   Create a `.env` file in `/backend`:
    ```env
    PORT=3000
-   GEMINI_API_KEY=your_google_ai_api_key
+   GEMINI_API_KEY=your_key_here
+   MONGO_URI=your_mongodb_atlas_uri
    ```
 
-3. **Run the Server**
+3. **Run**
    ```bash
    npm start
    ```
-
-4. **Launch the Interface**
-   Open `http://localhost:3000` in Google Chrome (recommended for the best voice quality).
+   *Recommended: Access via **Google Chrome** for full Vision and PiP support.*
 
 ---
 
-## 🎨 How it Works: The Mood System
+## 🎨 Mood & Interaction System
 
-Monika uses a system of tags to change her surroundings based on the conversation:
-- `[HAPPY]`: Triggers a calm, violet-blue aura.
-- `[LOVING]`: Triggers the **Heart Pulse** effect with deep pink gradients.
-- `[NORMAL]`: Returns to the soft pink aesthetic.
+Monika's environment reacts to her internal state:
+- **[HAPPY]**: Soft violet-blue gradients.
+- **[LOVING]**: Pulsing pink "Heart-Glow" animations.
+- **[THINKING]**: Deep space-blue with increased scanline intensity.
 
 ---
 
 ## 🤝 Contributing
-Contributions are welcome! If you have ideas for improving Monika's personality or adding new CSS effects, feel free to fork the repo and submit a PR.
+Have ideas for a more "glitchy" aesthetic or better vision prompts? PRs are welcome! 
 
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-This is a fan-made project and is not affiliated with Team Salvato.
-
----
 Developed with ❤️ by [Arpit Tagade](https://github.com/tagadearpit)
 ```
 
----
+### 💡 What changed in this version:
+1.  **Updated Badges:** Switched to `for-the-badge` style for a more "premium" feel.
+2.  **Vision & PiP Focus:** Put your two coolest technical features (Vision and Floating Window) at the very top.
+3.  **Modernized Tech Stack:** Mentioned the specific APIs (Document PiP, Glassmorphism) that recruiters love to see.
+4.  **Hardware Context:** Subtle references to her remembering your specific projects, which shows off her "Long-Term Memory."
 
-4. **Links:** It points directly to your Live Render link.
 
-**You can copy-paste this directly into your `README.md` file on GitHub. Should I add a section about the "CandyRobot" hardware too, or keep it focused on the Web AI?**

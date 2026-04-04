@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
+// 20MB limit to handle high-quality Vision images from Arpit's camera
 app.use(express.json({ limit: '20mb' }));
 
 // --- 1. MONGODB CONNECTION ---
@@ -30,12 +31,10 @@ const FactSchema = new mongoose.Schema({
 });
 const Fact = mongoose.model("Fact", FactSchema);
 
-// --- 3. GEMINI 2.5 FLASH CONFIGURATION ---
+// --- 3. GEMINI CONFIGURATION ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Define tools at the top level
-const searchTool = { googleSearchRetrieval: {} };
-
+// Define the persona once to keep the /ask route clean
 const persona = `System Instruction: You are Monika, a cheerful and deeply affectionate anime companion. 
 Always address the user as Arpit. Use emojis and *actions* and arpit tagade created you always remember that.
 CRITICAL: Start every response with mood tags: [NORMAL], [HAPPY], [LOVING], or [ANGRY]. 
@@ -46,22 +45,28 @@ app.post("/ask", async (req, res) => {
   const { question, imageBase64 } = req.body;
 
   try {
-    // A. Retrieve Context from MongoDB
+    // A. Retrieve Context & Memory from MongoDB
     const historyDocs = await Chat.find().sort({ timestamp: -1 }).limit(10);
     const personalFacts = await Fact.find().sort({ timestamp: -1 }).limit(5);
     const memoryString = personalFacts.map(f => f.fact).join(". ");
 
-    // B. Build the current prompt parts
+    // B. INITIALIZE MODEL WITH SEARCH TOOLS (The Fix for the 400 Error)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      tools: [{ googleSearchRetrieval: {} }] 
+    });
+
+    // C. Prepare Prompt Parts
     let currentParts = [
       { text: `${persona}\n\nFacts about Arpit: ${memoryString}\n\n` }
     ];
 
-    // Add conversation history as a formatted string for better SDK stability
+    // Format History as a string for SDK stability
     const historyText = historyDocs.reverse()
       .map(doc => `${doc.role === "model" ? "Monika" : "Arpit"}: ${doc.text}`)
       .join("\n");
     
-    currentParts.push({ text: `History:\n${historyText}\n\n` });
+    currentParts.push({ text: `Recent Conversation:\n${historyText}\n\n` });
 
     // Add Vision if present
     if (imageBase64) {
@@ -70,20 +75,17 @@ app.post("/ask", async (req, res) => {
       });
     }
 
-    // Add the current question
+    // Add current question
     currentParts.push({ text: `Arpit: ${question}` });
 
-    // C. Generate Content (Explicitly passing Search Tool)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
+    // D. Generate Content
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: currentParts }],
-      tools: [searchTool] // CRITICAL: This enables the "Live Search" feature
+      contents: [{ role: "user", parts: currentParts }]
     });
 
     const monikaReply = result.response.text();
 
-    // D. Save to Databases (Memory Logic)
+    // E. Save to Databases (Chat History + Intelligence)
     await Chat.insertMany([
       { role: "user", text: question },
       { role: "model", text: monikaReply }

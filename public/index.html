@@ -23,7 +23,6 @@
   </div>
 
   <div class="app-wrapper">
-    
     <div id="vision-container" class="glass-pane side-left">
       <header>
         <h1>👁️ Monika's Eyes</h1>
@@ -71,25 +70,5 @@
   <audio id="popSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
 
   <script src="script.js"></script>
-  
-  <script>
-    const micBtn = document.getElementById('micButton');
-    const micIcon = document.getElementById('micIcon');
-    const visionCont = document.getElementById('vision-container'); 
-    
-    micBtn.addEventListener('click', () => {
-      // Small delay to allow script.js logic to process first
-      setTimeout(() => {
-        if (micBtn.classList.contains('listening')) {
-          micIcon.innerText = '📸';
-          visionCont.classList.add('active'); 
-        } else {
-          micIcon.innerText = '🎤';
-          visionCont.classList.remove('active');
-        }
-      }, 50);
-    });
-  </script>
-
 </body>
 </html>

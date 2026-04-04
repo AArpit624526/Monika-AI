@@ -5,29 +5,19 @@
   --monika-dark: #700b33;
   --glass: rgba(255, 255, 255, 0.12);
   --glass-border: rgba(255, 255, 255, 0.2);
-  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
+  margin: 0; font-family: 'Poppins', sans-serif;
   background: #0f0c29;
   background: linear-gradient(135deg, #1a0624 0%, #4a0e2a 100%);
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  color: white;
+  height: 100vh; overflow: hidden; color: white;
 }
 
-/* --- Ambient Background Glow --- */
 .bg-glow {
-  position: fixed;
-  top: 50%; left: 50%;
-  width: 80vw; height: 80vh;
+  position: fixed; top: 50%; left: 50%; width: 100vw; height: 100vh;
   background: radial-gradient(circle, rgba(255, 77, 148, 0.15) 0%, transparent 70%);
-  transform: translate(-50%, -50%);
-  filter: blur(100px);
-  z-index: 0;
+  transform: translate(-50%, -50%); filter: blur(100px); z-index: 0;
   animation: pulse-bg 10s infinite alternate;
 }
 
@@ -37,182 +27,56 @@ body {
 }
 
 .app-wrapper {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  padding: 40px;
-  gap: 30px;
-  align-items: stretch;
-  z-index: 10;
-  position: relative;
-  box-sizing: border-box;
-  perspective: 1000px; /* For 3D effects */
+  display: flex; width: 100%; height: 100vh; padding: 30px; gap: 20px;
+  box-sizing: border-box; z-index: 10; position: relative;
 }
 
-/* --- Glass Panels --- */
+/* Glass Panels */
 .side-left, .side-right {
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 40px;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow);
-  transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 35px; border: 1px solid var(--glass-border);
+  transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-.side-left {
-  flex: 0;
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-}
+.side-left { flex: 0; width: 0; opacity: 0; overflow: hidden; display: flex; flex-direction: column; }
+.side-left.active { flex: 1; opacity: 1; padding: 20px; }
 
-.side-left.active {
-  flex: 1;
-  opacity: 1;
-  padding: 30px;
-  pointer-events: all;
-}
+.side-right { flex: 1.2; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
 
-.side-right {
-  flex: 1.2;
-  padding: 35px;
-  display: flex;
-  flex-direction: column;
-}
+.chat-header { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 15px; }
 
-/* --- Visual Content --- */
 h1 {
-  font-family: 'Dancing Script', cursive;
-  font-size: 2.8rem;
-  text-align: center;
-  margin: 0 0 20px 0;
+  font-family: 'Dancing Script', cursive; font-size: 2.2rem; margin: 0;
   background: linear-gradient(to right, #fff, var(--monika-pink));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(255, 77, 148, 0.5));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-.video-box {
-  flex: 1;
-  background: #000;
-  border-radius: 25px;
-  overflow: hidden;
-  position: relative;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+#pipButton {
+  position: absolute; right: 0; background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.6; transition: 0.3s;
 }
+#pipButton:hover { opacity: 1; transform: scale(1.2); }
 
-#vision-feed {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  filter: saturate(1.2);
-}
+.video-box { flex: 1; background: #000; border-radius: 20px; overflow: hidden; position: relative; border: 2px solid rgba(255,255,255,0.1); }
+#vision-feed { width: 100%; height: 100%; object-fit: cover; }
 
-#vision-label {
-  position: absolute;
-  bottom: 20px; left: 20px;
-  background: var(--monika-pink);
-  color: white;
-  padding: 6px 15px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-
-.chat {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  scrollbar-width: none;
-}
-
+.chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
 .chat::-webkit-scrollbar { display: none; }
 
-.bubble {
-  max-width: 85%;
-  padding: 16px 22px;
-  font-size: 15px;
-  line-height: 1.6;
-  border-radius: 25px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  animation: slide-up 0.4s ease-out;
-}
+.bubble { max-width: 85%; padding: 14px 18px; border-radius: 22px; font-size: 14px; animation: slide-up 0.3s ease-out; }
+.bubble.user { background: linear-gradient(135deg, var(--monika-pink), #ff1a75); color: white; align-self: flex-end; }
+.bubble.monika { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.1); align-self: flex-start; }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.input-area { display: flex; background: rgba(255, 255, 255, 0.08); padding: 8px 15px; border-radius: 30px; margin-top: 15px; border: 1px solid rgba(255, 255, 255, 0.1); }
+input#question { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
 
-.bubble.user {
-  background: linear-gradient(135deg, var(--monika-pink), #ff1a75);
-  color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 4px;
-}
+button#micButton, button#sendButton { width: 40px; height: 40px; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+button#micButton { background: transparent; font-size: 1.2rem; }
+button#micButton.listening { background: var(--monika-pink) !important; box-shadow: 0 0 15px var(--monika-pink); }
+button#sendButton { background: var(--monika-pink); color: white; margin-left: 8px; }
 
-.bubble.monika {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  align-self: flex-start;
-  border-bottom-left-radius: 4px;
-}
+/* Floating Particles */
+.heart { position: absolute; width: 15px; height: 15px; background: rgba(255, 77, 148, 0.2); border-radius: 50%; filter: blur(2px); animation: float-up 12s infinite linear; }
+@keyframes float-up { 0% { transform: translateY(0); opacity: 0; } 100% { transform: translateY(-110vh); opacity: 0; } }
 
-/* --- Controls --- */
-.input-area {
-  display: flex;
-  background: rgba(255, 255, 255, 0.07);
-  padding: 10px 15px;
-  border-radius: 35px;
-  margin-top: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-input#question {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: white;
-  padding: 10px;
-  outline: none;
-  font-size: 16px;
-}
-
-button#micButton, button#sendButton {
-  width: 46px; height: 46px;
-  border: none; border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex; align-items: center; justify-content: center;
-}
-
-button#micButton { background: transparent; font-size: 1.5rem; }
-button#micButton.listening {
-  background: var(--monika-pink) !important;
-  box-shadow: 0 0 25px var(--monika-pink);
-}
-
-button#sendButton { background: var(--monika-pink); color: white; margin-left: 10px; }
-button#sendButton:hover { transform: scale(1.1); }
-
-/* --- Decorative Floaties --- */
-.heart {
-  position: absolute;
-  width: 15px; height: 15px;
-  background: radial-gradient(circle, var(--monika-pink) 0%, transparent 80%);
-  border-radius: 50%;
-  filter: blur(2px);
-  animation: float-up 15s infinite linear;
-}
-
-@keyframes float-up {
-  0% { transform: translateY(0) scale(1); opacity: 0; }
-  20% { opacity: 0.4; }
-  100% { transform: translateY(-110vh) scale(1.5); opacity: 0; }
-}
+/* Floating Window Specific Styling */
+:where(body:empty) { background: #1a0624; }

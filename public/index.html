@@ -13,8 +13,6 @@
 </head>
 <body>
 
-  <video id="vision-feed" style="display:none;" autoplay playsinline></video>
-
   <div class="heart-container">
     <div class="heart" style="left:10%; animation-delay:0s;"></div>
     <div class="heart" style="left:25%; animation-delay:2s;"></div>
@@ -28,6 +26,12 @@
     <header>
       <h1>🌸 Monika AI 🌸</h1>
     </header>
+
+    <div id="vision-container" style="display:none; position: relative; margin-bottom: 15px;">
+      <video id="vision-feed" autoplay playsinline style="width: 100%; border-radius: 15px; border: 3px solid #ff69b4; transform: scaleX(-1); box-shadow: 0 0 20px rgba(255,105,180,0.3);"></video>
+      <canvas id="capture-canvas" style="display:none;"></canvas>
+      <div id="vision-label" style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px;">Monika's Eyes Active</div>
+    </div>
 
     <main id="chat" class="chat">
       <div class="bubble monika">
@@ -44,7 +48,7 @@
         spellcheck="false" 
       />
       
-      <button id="micButton" title="Toggle Live Voice Mode">
+      <button id="micButton" title="Toggle Vision & Voice">
         <span id="micIcon">🎤</span>
       </button>
       
@@ -61,15 +65,15 @@
   <script src="script.js"></script>
   
   <script>
-    // UX Helper for the Mic Button icon toggle
+    // UX Helper for the Button Icon
     const micBtn = document.getElementById('micButton');
     const micIcon = document.getElementById('micIcon');
     
     micBtn.addEventListener('click', () => {
-      // Small delay to let script.js update the class first
       setTimeout(() => {
-        if (micBtn.classList.contains('listening')) {
-          micIcon.innerText = '🛑'; 
+        // Switch icon based on whether camera/mic is active
+        if (micBtn.classList.contains('active')) {
+          micIcon.innerText = '📸'; // Showing it's in capture mode
         } else {
           micIcon.innerText = '🎤';
         }

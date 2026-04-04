@@ -66,8 +66,8 @@ function monikaSpeak(text, voiceEnabled = false) {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.pitch = 1.6; 
-    utterance.rate = 1.1; 
+    utterance.pitch = 0.9; 
+    utterance.rate = 0.9; 
 
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = voices.find(v => 

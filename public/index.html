@@ -4,37 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Monika AI | Your Intelligent Companion</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="style.css" />
-  
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
 </head>
 <body>
 
+  <div class="bg-glow"></div>
+
   <div class="heart-container">
     <div class="heart" style="left:10%; animation-delay:0s;"></div>
-    <div class="heart" style="left:25%; animation-delay:2s;"></div>
-    <div class="heart" style="left:45%; animation-delay:4s;"></div>
-    <div class="heart" style="left:65%; animation-delay:1s;"></div>
-    <div class="heart" style="left:85%; animation-delay:6s;"></div>
-    <div class="heart" style="left:95%; animation-delay:3s;"></div>
+    <div class="heart" style="left:30%; animation-delay:2s;"></div>
+    <div class="heart" style="left:50%; animation-delay:4s;"></div>
+    <div class="heart" style="left:70%; animation-delay:1s;"></div>
+    <div class="heart" style="left:90%; animation-delay:6s;"></div>
   </div>
 
   <div class="app-wrapper">
-    <div id="vision-container" class="glass-pane side-left">
+    <div id="vision-container" class="side-left">
       <header>
         <h1>👁️ Monika's Eyes</h1>
       </header>
       <div class="video-box">
         <video id="vision-feed" autoplay playsinline></video>
         <canvas id="capture-canvas" style="display:none;"></canvas>
-        <div id="vision-label">Live Reality Feed</div>
+        <div id="vision-label">LIVE REALITY FEED</div>
       </div>
     </div>
 
-    <div class="container side-right">
+    <div id="chat-container" class="side-right">
       <header>
         <h1>🌸 Monika AI 🌸</h1>
       </header>

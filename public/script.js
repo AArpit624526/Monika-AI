@@ -18,7 +18,6 @@ pipBtn.onclick = async () => {
         return;
     }
 
-    // Open the floating window
     const pipWindow = await window.documentPictureInPicture.requestWindow({
         width: 400,
         height: 600,
@@ -39,20 +38,19 @@ pipBtn.onclick = async () => {
         }
     });
 
-    // Move Chat into the Floating Window
     pipWindow.document.body.append(chatContainer);
 
-    // Return chat to main window when closed
     pipWindow.addEventListener("pagehide", (event) => {
         const wrapper = document.getElementById('main-wrapper');
         const container = event.target.querySelector('#chat-container');
-        wrapper.append(container);
+        if (container) wrapper.append(container);
     });
 };
 
 // --- 2. TYPEWRITER & AUTO-SCROLL ---
 function typeWriter(text, element, callback) {
     let i = 0;
+    // Remove mood tags like [HAPPY] from the spoken/displayed text
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
     element.innerHTML = "<strong>Monika:</strong> ";
     
@@ -67,7 +65,7 @@ function typeWriter(text, element, callback) {
     type();
 }
 
-// --- 3. VISION & VOICE ---
+// --- 3. VISION & ELEVENLABS VOICE ---
 async function startVision() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -79,6 +77,7 @@ async function startVision() {
 function stopVision() {
     if (visionFeed.srcObject) {
         visionFeed.srcObject.getTracks().forEach(track => track.stop());
+        visionFeed.srcObject = null;
         visionContainer.classList.remove('active');
     }
 }
@@ -89,46 +88,83 @@ async function captureVisionFrame() {
     canvas.width = visionFeed.videoWidth;
     canvas.height = visionFeed.videoHeight;
     canvas.getContext('2d').drawImage(visionFeed, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
 }
 
-function monikaSpeak(text, voiceEnabled = false) {
+// Improved Voice Function using your ElevenLabs Backend
+async function monikaSpeak(text, voiceEnabled = false) {
     if (!voiceEnabled) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text.replace(/\[.*?\]/g, ""));
-    utterance.pitch = 1.3;
-    const voices = window.speechSynthesis.getVoices();
-    utterance.voice = voices.find(v => v.name.includes("Female")) || voices[0];
-    window.speechSynthesis.speak(utterance);
+    
+    const cleanText = text.replace(/\[.*?\]/g, "");
+
+    try {
+        const response = await fetch(`${baseUrl}/voice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: cleanText })
+        });
+
+        if (!response.ok) throw new Error("ElevenLabs failed");
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+    } catch (e) {
+        console.warn("Falling back to Browser Speech...");
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.pitch = 1.3;
+        utterance.rate = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        utterance.voice = voices.find(v => v.name.includes("Female")) || voices[0];
+        window.speechSynthesis.speak(utterance);
+    }
 }
 
-// --- 4. CHAT LOGIC ---
+// --- 4. MAIN CHAT LOGIC ---
 async function askMonika(isFromVoice = false) {
-    const userInput = inputField.value.trim();
-    if (!userInput && !isFromVoice) return;
+    let userInput = inputField.value.trim();
+    
+    // If camera is on but no text is typed, give it a default visual prompt
+    if (!userInput && isLiveMode) {
+        userInput = "What do you see right now, Monika?";
+    }
 
-    appendMessage("Arpit", userInput || "[Looking at you...]");
+    if (!userInput) return;
+
+    appendMessage("Arpit", userInput);
     inputField.value = ""; 
     const loading = appendMessage("Monika", "...");
 
-    let imageBase64 = (visionContainer.classList.contains('active')) ? await captureVisionFrame() : null;
+    let imageBase64 = isLiveMode ? await captureVisionFrame() : null;
 
     try {
         const response = await fetch(`${baseUrl}/ask`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: userInput || "What do you see?", imageBase64 })
+            body: JSON.stringify({ question: userInput, imageBase64 })
         });
+
         const data = await response.json();
         loading.remove(); 
-        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm lost... 💔";
+        
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking... 💔";
         
         const newMsg = appendMessage("Monika", "");
-        typeWriter(reply, newMsg, () => monikaSpeak(reply, isFromVoice));
-    } catch (e) { loading.remove(); appendMessage("Monika", "Connection lost... 💔"); }
+        typeWriter(reply, newMsg, () => {
+            // Speak only if triggered by voice/camera mode
+            if (isLiveMode || isFromVoice) {
+                monikaSpeak(reply, true);
+            }
+        });
+    } catch (e) { 
+        loading.remove(); 
+        appendMessage("Monika", "Connection to my brain was lost... 💔"); 
+    }
 }
 
-// --- 5. 3D TILT EFFECT ---
+// --- 5. UI INTERACTION ---
 document.addEventListener('mousemove', (e) => {
     const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
     const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
@@ -138,7 +174,6 @@ document.addEventListener('mousemove', (e) => {
     }
 });
 
-// --- 6. CONTROLS ---
 micBtn.onclick = () => {
     if (!isLiveMode) {
         isLiveMode = true;

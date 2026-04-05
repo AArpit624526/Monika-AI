@@ -94,8 +94,16 @@ app.post("/ask", async (req, res) => {
 });
 
 // --- 5. SERVE FRONTEND ---
-// Adjust path if your index.html is in the same folder as server.js
-app.use(express.static(path.join(__dirname)));
+// Go up one directory level from 'backend', then into 'public'
+const publicPath = path.join(__dirname, '../public');
+
+// Safely serve ONLY the files inside the 'public' folder
+app.use(express.static(publicPath));
+
+// Explicitly send index.html when someone visits the main URL
+app.get('/', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Monika is Live on Port ${PORT}!`));

@@ -1,12 +1,12 @@
 // --- CONFIGURATION ---
-const baseUrl = "https://monika-ai-0jpf.onrender.com";
-let isLiveMode = false; 
+const baseUrl = ""; // Empty string because backend and frontend are on the same server now
+let isVisionActive = false; 
 
 const visionFeed = document.getElementById('vision-feed');
 const visionContainer = document.getElementById('vision-container');
 const chatContainer = document.getElementById('chat-container');
 const micBtn = document.getElementById('micButton');
-const micIcon = document.getElementById('micIcon');
+const camBtn = document.getElementById('camButton'); 
 const inputField = document.getElementById("question");
 const chatBox = document.getElementById("chat");
 const pipBtn = document.getElementById('pipButton');
@@ -36,14 +36,17 @@ pipBtn.onclick = async () => {
     });
 };
 
-// --- 2. TYPEWRITER ---
+// --- 2. SECURE TYPEWRITER ---
 function typeWriter(text, element, callback) {
     let i = 0;
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
-    element.innerHTML = "<strong>Monika:</strong> ";
+    
+    element.innerHTML = "<strong>Monika:</strong> <span class='msg-text'></span>";
+    const textSpan = element.querySelector('.msg-text');
+
     function type() {
         if (i < cleanText.length) {
-            element.innerHTML += cleanText.charAt(i);
+            textSpan.textContent += cleanText.charAt(i); 
             i++;
             chatBox.scrollTop = chatBox.scrollHeight;
             setTimeout(type, (cleanText[i-1] === "." ? 200 : 35));
@@ -52,7 +55,7 @@ function typeWriter(text, element, callback) {
     type();
 }
 
-// --- 3. VISION & BROWSER VOICE ---
+// --- 3. VISION CAPABILITIES ---
 async function startVision() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -78,29 +81,63 @@ async function captureVisionFrame() {
     return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
 }
 
+// --- 4. TEXT-TO-SPEECH (MONIKA'S VOICE) ---
 function monikaSpeak(text) {
     window.speechSynthesis.cancel();
     const cleanText = text.replace(/\[.*?\]/g, "");
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.pitch = 1.3;
     utterance.rate = 1.0;
+    
     const voices = window.speechSynthesis.getVoices();
-    // Tries to find a female-sounding voice
-    utterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
+    if (voices.length > 0) {
+        utterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
+    }
     window.speechSynthesis.speak(utterance);
 }
+// Force voices to load on startup
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
-// --- 4. CHAT LOGIC ---
-async function askMonika() {
+
+// --- 5. SPEECH-TO-TEXT (VOICE RECOGNITION) ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false; 
+    
+    recognition.onstart = () => {
+        micBtn.classList.add('listening');
+        inputField.placeholder = "Listening...";
+    };
+    
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputField.value = transcript;
+        askMonika(true); // Send it, and force a voice reply
+    };
+    
+    recognition.onend = () => {
+        micBtn.classList.remove('listening');
+        inputField.placeholder = "Say something...";
+    };
+} else {
+    console.warn("Your browser doesn't support Voice Recognition.");
+}
+
+// --- 6. CHAT LOGIC ---
+async function askMonika(speakResponse = false) {
     let userInput = inputField.value.trim();
-    if (!userInput && isLiveMode) userInput = "What do you see right now, Monika?";
+    
+    if (!userInput && isVisionActive) userInput = "What do you see right now, Monika?";
     if (!userInput) return;
 
     appendMessage("Arpit", userInput);
     inputField.value = ""; 
     const loading = appendMessage("Monika", "...");
 
-    let imageBase64 = isLiveMode ? await captureVisionFrame() : null;
+    let imageBase64 = isVisionActive ? await captureVisionFrame() : null;
 
     try {
         const response = await fetch(`${baseUrl}/ask`, {
@@ -112,21 +149,33 @@ async function askMonika() {
         loading.remove(); 
         const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit confused... 💔";
         const newMsg = appendMessage("Monika", "");
-        typeWriter(reply, newMsg, () => { if(isLiveMode) monikaSpeak(reply); });
+        
+        typeWriter(reply, newMsg, () => { 
+            if(speakResponse || isVisionActive) monikaSpeak(reply); 
+        });
     } catch (e) { 
         loading.remove(); 
         appendMessage("Monika", "Connection lost... 💔"); 
     }
 }
 
-// --- 5. UI ---
-micBtn.onclick = () => {
-    isLiveMode = !isLiveMode;
-    micBtn.classList.toggle('listening', isLiveMode);
-    micIcon.innerText = isLiveMode ? '📸' : '🎤';
-    isLiveMode ? startVision() : stopVision();
-    if (!isLiveMode) window.speechSynthesis.cancel();
+// --- 7. BUTTON EVENTS ---
+camBtn.onclick = () => {
+    isVisionActive = !isVisionActive;
+    camBtn.classList.toggle('active', isVisionActive);
+    isVisionActive ? startVision() : stopVision();
 };
+
+micBtn.onclick = () => {
+    if (recognition) {
+        recognition.start();
+    } else {
+        alert("Voice recognition is not supported in this browser.");
+    }
+};
+
+document.getElementById("sendButton").onclick = () => askMonika(false); 
+inputField.onkeydown = (e) => { if(e.key === "Enter") askMonika(false); };
 
 function appendMessage(sender, text) {
     const msgDiv = document.createElement("div");
@@ -136,7 +185,3 @@ function appendMessage(sender, text) {
     chatBox.scrollTop = chatBox.scrollHeight;
     return msgDiv;
 }
-
-document.getElementById("sendButton").onclick = () => askMonika();
-inputField.onkeydown = (e) => { if(e.key === "Enter") askMonika(); };
-window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();

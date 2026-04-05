@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-const baseUrl = ""; // Empty string because backend and frontend are on the same server now
+const baseUrl = ""; 
 let isVisionActive = false; 
 
 const visionFeed = document.getElementById('vision-feed');
@@ -150,9 +150,15 @@ async function askMonika(speakResponse = false) {
         const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm a bit confused... 💔";
         const newMsg = appendMessage("Monika", "");
         
-        typeWriter(reply, newMsg, () => { 
-            if(speakResponse || isVisionActive) monikaSpeak(reply); 
-        });
+        // --- NEW BEHAVIOR: SPEAK IMMEDIATELY ---
+        // She speaks right now, instead of waiting for the typewriter!
+        if(speakResponse || isVisionActive) {
+            monikaSpeak(reply); 
+        }
+        
+        // Typewriter starts typing at the same time she starts talking
+        typeWriter(reply, newMsg); 
+
     } catch (e) { 
         loading.remove(); 
         appendMessage("Monika", "Connection lost... 💔"); 
@@ -168,7 +174,26 @@ camBtn.onclick = () => {
 
 micBtn.onclick = () => {
     if (recognition) {
-        recognition.start();
+        // --- NEW BEHAVIOR: GREETING BEFORE LISTENING ---
+        window.speechSynthesis.cancel(); // Stop any current speech
+        inputField.placeholder = "Monika is speaking...";
+        
+        const greeting = new SpeechSynthesisUtterance("What would you want to talk, Arpit?");
+        greeting.pitch = 1.3;
+        greeting.rate = 1.0;
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            greeting.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
+        }
+
+        // Wait until she finishes saying the greeting before turning on the mic
+        greeting.onend = () => {
+            recognition.start();
+        };
+
+        window.speechSynthesis.speak(greeting);
+        
     } else {
         alert("Voice recognition is not supported in this browser.");
     }

@@ -77,8 +77,25 @@ app.post("/ask", async (req, res) => {
     const personalFacts = await Fact.find().sort({ timestamp: -1 }).limit(5);
     const memoryString = personalFacts.map(f => f.fact).join(". ");
 
+    // 1. Define the UI Theme Tool
+    const uiTool = {
+      functionDeclarations: [{
+        name: "changeWebsiteTheme",
+        description: "Changes the visual theme of the website when Arpit asks for a dark mode, hacker mode, or normal mode.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            theme: { type: "STRING", enum: ["default", "dark", "hacker"] }
+          },
+          required: ["theme"]
+        }
+      }]
+    };
+
+    // 2. Pass the tool into the Generative Model
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite"
+      model: "gemini-2.5-flash-lite",
+      tools: [uiTool]
     });
 
     let currentParts = [
@@ -103,7 +120,20 @@ app.post("/ask", async (req, res) => {
       contents: [{ role: "user", parts: currentParts }]
     });
 
-    const monikaReply = result.response.text();
+    const response = result.response;
+    let monikaReply = "";
+    let actionCommand = null;
+
+    // 3. Handle Function Calls if Monika uses her tool
+    if (response.functionCalls() && response.functionCalls().length > 0) {
+        const call = response.functionCalls()[0];
+        if (call.name === "changeWebsiteTheme") {
+            actionCommand = call.args.theme;
+            monikaReply = `*Switches the system to ${call.args.theme} mode* How does this look, Arpit?`;
+        }
+    } else {
+        monikaReply = response.text();
+    }
 
     await Chat.insertMany([
       { role: "user", text: question },
@@ -115,7 +145,8 @@ app.post("/ask", async (req, res) => {
         await Fact.create({ fact: question, category: "preference" });
     }
 
-    res.json({ candidates: [{ content: { parts: [{ text: monikaReply }] } }] });
+    // 4. Send the text AND action command to the frontend
+    res.json({ reply: monikaReply, action: actionCommand });
 
   } catch (err) {
     console.error("Monika Brain Error:", err.message);

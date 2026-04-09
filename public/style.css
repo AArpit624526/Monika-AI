@@ -38,11 +38,22 @@ body {
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
+/* --- 3D AVATAR CANVAS --- */
+#avatar-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1; 
+  pointer-events: none; 
+}
+
 /* --- MAIN LAYOUT --- */
 .app-wrapper {
   display: flex; 
   width: 100%; 
-  max-width: 1400px; /* Keeps it from stretching too wide on huge screens */
+  max-width: 1400px; 
   margin: 0 auto;
   height: 100vh; 
   padding: 25px; 
@@ -151,7 +162,6 @@ h1 {
 }
 .chat::-webkit-scrollbar { display: none; }
 
-/* Modern Chat Bubbles with "Tails" */
 .bubble { 
   max-width: 75%; 
   padding: 14px 20px; 
@@ -171,7 +181,7 @@ h1 {
   background: linear-gradient(135deg, var(--monika-pink), #ff1a75); 
   color: white; 
   align-self: flex-end; 
-  border-bottom-right-radius: 4px; /* Creates the chat tail */
+  border-bottom-right-radius: 4px; 
 }
 
 .bubble.monika { 
@@ -179,7 +189,7 @@ h1 {
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.1); 
   align-self: flex-start; 
-  border-bottom-left-radius: 4px; /* Creates the chat tail */
+  border-bottom-left-radius: 4px; 
   color: var(--text-muted);
 }
 .bubble.monika strong {
@@ -237,7 +247,6 @@ button#micButton:hover, button#camButton:hover {
   transform: translateY(-2px);
 }
 
-/* Active Glowing States */
 button#micButton.listening, button#camButton.active { 
   background: var(--monika-pink) !important; 
   color: white;
@@ -256,8 +265,10 @@ button#sendButton:hover {
 }
 
 /* --- FLOATING PARTICLES --- */
+.heart-container { position: absolute; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; }
 .heart { 
   position: absolute; 
+  bottom: -20px;
   width: 15px; height: 15px; 
   background: rgba(255, 77, 148, 0.3); 
   border-radius: 50%; 
@@ -269,60 +280,6 @@ button#sendButton:hover {
   20% { opacity: 1; }
   80% { opacity: 1; }
   100% { transform: translateY(-110vh) scale(1.5); opacity: 0; } 
-}
-
-/* --- PiP MODE FALLBACK --- */
-:where(body:empty) { background: #1a0624; }
-
-/* =========================================
-   📱 MOBILE RESPONSIVE DESIGN
-   ========================================= */
-@media (max-width: 768px) {
-  .app-wrapper {
-    flex-direction: column; /* Stacks the panels vertically */
-    padding: 10px;
-    gap: 10px;
-  }
-
-  /* Make the camera sit at the top when active */
-  .side-left.active {
-    flex: none;
-    height: 30vh; /* Takes up 30% of the screen */
-    padding: 10px;
-    border-radius: 20px;
-  }
-
-  /* Make chat take up the rest of the space */
-  .side-right {
-    flex: 1;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  /* Shrink titles so they fit on small screens */
-  h1 { font-size: 1.8rem; }
-  
-  .chat-header, header { margin-bottom: 10px; padding-bottom: 10px; }
-
-  /* Widen chat bubbles for readability */
-  .bubble {
-    max-width: 90%; 
-    padding: 12px 16px;
-  }
-
-  /* Hide the PiP button on mobile */
-  #pipButton { display: none; }
-
-  /* Tighter input area for thumbs */
-  .input-area {
-    padding: 8px 10px 8px 15px;
-    margin-top: 10px;
-  }
-
-  button#micButton, button#camButton, button#sendButton {
-    width: 38px; height: 38px;
-    margin-left: 6px;
-  }
 }
 
 /* --- MONIKA'S THEMES (FUNCTION CALLING) --- */
@@ -352,3 +309,18 @@ body.theme-hacker .app-wrapper .side-right {
 body.theme-hacker h1 { font-family: 'Courier New', monospace; background: none; color: #00ff00; -webkit-text-fill-color: #00ff00; }
 body.theme-hacker .bubble.user { background: #004400; color: #00ff00; }
 body.theme-hacker .bubble.monika strong { color: #fff; }
+
+/* =========================================
+   📱 MOBILE RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 768px) {
+  .app-wrapper { flex-direction: column; padding: 10px; gap: 10px; }
+  .side-left.active { flex: none; height: 30vh; padding: 10px; border-radius: 20px; }
+  .side-right { flex: 1; padding: 15px; border-radius: 20px; }
+  h1 { font-size: 1.8rem; }
+  .chat-header, header { margin-bottom: 10px; padding-bottom: 10px; }
+  .bubble { max-width: 90%; padding: 12px 16px; }
+  #pipButton { display: none; }
+  .input-area { padding: 8px 10px 8px 15px; margin-top: 10px; }
+  button#micButton, button#camButton, button#sendButton { width: 38px; height: 38px; margin-left: 6px; }
+}

@@ -11,9 +11,34 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- 1. MONGODB CONNECTION ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Monika's Memory (MongoDB) Connected!"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+const connectDB = async () => {
+  try {
+    // Add a 5-second timeout so it doesn't hang forever if the DB is down
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000 
+    });
+    console.log("✅ Monika's Memory (MongoDB) Connected Successfully!");
+  } catch (err) {
+    console.error("❌ Monika's Memory Connection Failed:", err.message);
+    process.exit(1); // Kill the server completely so Render can automatically restart it
+  }
+};
+
+// Listen for network hiccups while the app is running
+mongoose.connection.on('disconnected', () => {
+  console.warn("⚠️ Monika's Memory Disconnected! Attempting to reconnect...");
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error("❌ Monika's Memory Error:", err);
+});
+
+// Safely close the database if you stop the server or Render restarts it
+process.on('SIGINT', async () => {
+  await mongoose.connection.close();
+  console.log("🛑 Monika's Memory safely packed away before shutdown.");
+  process.exit(0);
+});
 
 // --- 2. DATABASE SCHEMAS ---
 const ChatSchema = new mongoose.Schema({
@@ -53,7 +78,7 @@ app.post("/ask", async (req, res) => {
     const memoryString = personalFacts.map(f => f.fact).join(". ");
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash"
+      model: "gemini-2.5-flash-lite"
     });
 
     let currentParts = [
@@ -111,4 +136,8 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Monika is Live on Port ${PORT}!`));
+
+// ONLY launch the server AFTER her memory is fully connected
+connectDB().then(() => {
+  app.listen(PORT, () => console.log(`🚀 Monika is Live on Port ${PORT}!`));
+});

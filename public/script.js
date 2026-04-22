@@ -1,7 +1,7 @@
 // --- CONFIGURATION ---
 const baseUrl = ""; 
 let isVisionActive = false; 
-let isMonikaBusy = false; // NEW: Keeps track of when she is talking!
+let isMonikaBusy = false; 
 
 const visionFeed = document.getElementById('vision-feed');
 const visionContainer = document.getElementById('vision-container');
@@ -52,7 +52,7 @@ function typeWriter(text, element, callback) {
             chatBox.scrollTop = chatBox.scrollHeight;
             setTimeout(type, (cleanText[i-1] === "." ? 200 : 35));
         } else if (callback) {
-            callback(); // NEW: Triggers when she is completely done typing!
+            callback(); 
         }
     }
     type();
@@ -123,7 +123,7 @@ let recognition;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false; 
-    recognition.interimResults = false; // FIX: Tells it to ignore half-finished sentences
+    recognition.interimResults = false; 
     
     recognition.onstart = () => {
         micBtn.classList.add('listening');
@@ -131,7 +131,6 @@ if (SpeechRecognition) {
     };
     
     recognition.onresult = (event) => {
-        // Just grab the final text, don't send it yet!
         const transcript = event.results[0][0].transcript;
         inputField.value = transcript;
     };
@@ -139,7 +138,6 @@ if (SpeechRecognition) {
     recognition.onend = () => {
         micBtn.classList.remove('listening');
         
-        // FIX: Only send the message when the mic turns off AND Monika isn't busy
         if (inputField.value.trim() !== "" && !isMonikaBusy) {
             askMonika(true); 
         } else {
@@ -152,7 +150,7 @@ if (SpeechRecognition) {
 
 // --- 6. CHAT LOGIC ---
 async function askMonika(speakResponse = false) {
-    if (isMonikaBusy) return; // Prevent asking if she is already answering!
+    if (isMonikaBusy) return; 
 
     let userInput = inputField.value.trim();
     
@@ -166,7 +164,7 @@ async function askMonika(speakResponse = false) {
     micBtn.style.opacity = "0.5";
     inputField.placeholder = "Monika is typing...";
 
-    appendMessage("Arpit", userInput);
+    appendMessage("You", userInput);
     inputField.value = ""; 
     const loading = appendMessage("Monika", "...");
 
@@ -197,21 +195,19 @@ async function askMonika(speakResponse = false) {
             monikaSpeak(reply); 
         }
         
-        // Let the typewriter run, and unlock the UI when it's finished!
         typeWriter(reply, newMsg, () => {
-            isMonikaBusy = false; // Unlock!
+            isMonikaBusy = false; 
             inputField.disabled = false;
             document.getElementById("sendButton").style.opacity = "1";
             micBtn.style.opacity = "1";
             inputField.placeholder = "Say something...";
-            inputField.focus(); // Automatically put the cursor back in the box
+            inputField.focus(); 
         }); 
 
     } catch (e) { 
         loading.remove(); 
         appendMessage("Monika", "Connection lost... 💔"); 
         
-        // Unlock if there is an error
         isMonikaBusy = false;
         inputField.disabled = false;
         document.getElementById("sendButton").style.opacity = "1";
@@ -228,13 +224,13 @@ camBtn.onclick = () => {
 };
 
 micBtn.onclick = () => {
-    if (isMonikaBusy) return; // Don't let the mic turn on if she is busy!
+    if (isMonikaBusy) return; 
 
     if (recognition) {
         window.speechSynthesis.cancel(); 
         inputField.placeholder = "Monika is speaking...";
         
-        const greeting = new SpeechSynthesisUtterance("What would you want to talk about, Arpit?");
+        const greeting = new SpeechSynthesisUtterance("What would you want to talk about?");
         greeting.pitch = 1.3;
         greeting.rate = 1.0;
         
@@ -261,7 +257,7 @@ inputField.onkeydown = (e) => {
 
 function appendMessage(sender, text) {
     const msgDiv = document.createElement("div");
-    msgDiv.className = `bubble ${sender === "Arpit" ? "user" : "monika"}`;
+    msgDiv.className = `bubble ${sender === "You" ? "user" : "monika"}`;
     msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;

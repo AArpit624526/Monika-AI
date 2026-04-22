@@ -6,22 +6,10 @@
   <title>Monika AI | Your Intelligent Companion</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
-  
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/",
-        "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
-      }
-    }
-  </script>
 </head>
 <body>
 
   <div class="bg-glow"></div>
-  
-  <canvas id="avatar-canvas"></canvas>
 
   <div class="heart-container">
     <div class="heart" style="left:10%; animation-delay:0s;"></div>
@@ -76,7 +64,6 @@
   </div>
 
   <audio id="popSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
-  
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

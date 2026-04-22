@@ -1,7 +1,3 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-
 // --- CONFIGURATION ---
 const baseUrl = ""; 
 let isVisionActive = false; 
@@ -15,79 +11,7 @@ const inputField = document.getElementById("question");
 const chatBox = document.getElementById("chat");
 const pipBtn = document.getElementById('pipButton');
 
-// --- 1. 3D AVATAR SETUP ---
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-camera.position.set(0.4, 1.4, 1.5); // Aim the camera at her face
-
-const renderer = new THREE.WebGLRenderer({ 
-    canvas: document.getElementById('avatar-canvas'), 
-    alpha: true, // Transparent background so the CSS glow shows through
-    antialias: true 
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-
-const light = new THREE.DirectionalLight(0xffffff, Math.PI);
-light.position.set(1, 1, 1).normalize();
-scene.add(light);
-
-let currentVrm = undefined;
-const loader = new GLTFLoader();
-loader.register((parser) => new VRMLoaderPlugin(parser));
-
-// LOAD THE 3D MODEL
-loader.load('/monika.vrm', (gltf) => {
-    const vrm = gltf.userData.vrm;
-    scene.add(vrm.scene);
-    currentVrm = vrm;
-    VRMUtils.rotateVRM0(vrm); 
-    
-    // --- FIX: T-POSE AND DIRECTION ---
-    // 1. Turn her around 180 degrees to face you!
-    vrm.scene.rotation.y = Math.PI; 
-
-    // 2. Relax her arms so she isn't stuck in a T-Pose
-    const leftArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-    const rightArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-    
-    // Rotate the shoulder joints down
-    if (leftArm) leftArm.rotation.z = 1.2;  
-    if (rightArm) rightArm.rotation.z = -1.2; 
-    
-    console.log("🌸 Avatar Loaded successfully!");
-}, undefined, (error) => console.error("VRM Load Error:", error));
-
-// ANIMATION LOOP
-const clock = new THREE.Clock();
-function animate() {
-    requestAnimationFrame(animate);
-    const deltaTime = clock.getDelta();
-    const elapsedTime = clock.getElapsedTime();
-
-    if (currentVrm) {
-        currentVrm.update(deltaTime);
-        
-        // Gentle breathing and swaying movement
-        currentVrm.scene.rotation.y = Math.sin(elapsedTime * 0.5) * 0.05 + Math.PI; // Added Math.PI so she stays facing forward while swaying
-        
-        const head = currentVrm.humanoid.getNormalizedBoneNode('head');
-        if (head) {
-            head.rotation.x = Math.sin(elapsedTime) * 0.02;
-            head.rotation.y = Math.cos(elapsedTime * 0.8) * 0.05;
-        }
-    }
-    renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// --- 2. POP-OUT LOGIC ---
+// --- 1. POP-OUT LOGIC ---
 pipBtn.onclick = async () => {
     if (!window.documentPictureInPicture) {
         alert("Use Chrome for the floating window! 🌸");
@@ -112,7 +36,7 @@ pipBtn.onclick = async () => {
     });
 };
 
-// --- 3. SECURE TYPEWRITER ---
+// --- 2. SECURE TYPEWRITER ---
 function typeWriter(text, element, callback) {
     let i = 0;
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
@@ -131,7 +55,7 @@ function typeWriter(text, element, callback) {
     type();
 }
 
-// --- 4. VISION CAPABILITIES ---
+// --- 3. VISION CAPABILITIES ---
 async function startVision() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -157,53 +81,21 @@ async function captureVisionFrame() {
     return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
 }
 
-// --- 5. TEXT-TO-SPEECH, FACIAL EXPRESSIONS & LIP-SYNC ---
-let speakInterval;
-
-function startLipSync() {
-    if (!currentVrm) return;
-    const vowels = ['aa', 'ih', 'ou', 'ee', 'oh'];
-    // Randomly flap mouth shapes to simulate talking
-    speakInterval = setInterval(() => {
-        vowels.forEach(v => currentVrm.expressionManager.setValue(v, 0));
-        const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-        currentVrm.expressionManager.setValue(randomVowel, Math.random() * 0.8 + 0.2);
-    }, 100); 
-}
-
-function stopLipSync() {
-    clearInterval(speakInterval);
-    if (currentVrm) {
-        const vowels = ['aa', 'ih', 'ou', 'ee', 'oh'];
-        vowels.forEach(v => currentVrm.expressionManager.setValue(v, 0));
-    }
-}
-
+// --- 4. TEXT-TO-SPEECH (MONIKA'S VOICE) ---
 function monikaSpeak(text) {
     window.speechSynthesis.cancel();
-    stopLipSync(); // Reset mouth just in case
-
     const utterance = new SpeechSynthesisUtterance();
     
     let currentPitch = 1.4; 
     let currentRate = 1.15;
 
-    // Trigger 3D Face & Audio adjustments based on mood tags
-    if (currentVrm) {
-        currentVrm.expressionManager.setValue('happy', 0);
-        currentVrm.expressionManager.setValue('angry', 0);
-        currentVrm.expressionManager.setValue('sad', 0);
-
-        if (text.includes("[ANGRY]")) {
-            currentPitch = 1.6; currentRate = 1.35;
-            currentVrm.expressionManager.setValue('angry', 1.0);
-        } else if (text.includes("[SAD]")) {
-            currentPitch = 1.1; currentRate = 0.9;
-            currentVrm.expressionManager.setValue('sad', 1.0);
-        } else if (text.includes("[LOVING]") || text.includes("[HAPPY]")) {
-            currentPitch = 1.3; currentRate = 1.05;
-            currentVrm.expressionManager.setValue('happy', 1.0);
-        }
+    // Trigger Audio adjustments based on mood tags
+    if (text.includes("[ANGRY]")) {
+        currentPitch = 1.6; currentRate = 1.35;
+    } else if (text.includes("[SAD]")) {
+        currentPitch = 1.1; currentRate = 0.9;
+    } else if (text.includes("[LOVING]") || text.includes("[HAPPY]")) {
+        currentPitch = 1.3; currentRate = 1.05;
     }
 
     utterance.pitch = currentPitch;
@@ -216,16 +108,12 @@ function monikaSpeak(text) {
     if (voices.length > 0) {
         utterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
     }
-    
-    // Hook up Lip-Sync!
-    utterance.onstart = () => startLipSync();
-    utterance.onend = () => stopLipSync();
 
     window.speechSynthesis.speak(utterance);
 }
 window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
-// --- 6. SPEECH-TO-TEXT (VOICE RECOGNITION) ---
+// --- 5. SPEECH-TO-TEXT (VOICE RECOGNITION) ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
 
@@ -252,7 +140,7 @@ if (SpeechRecognition) {
     console.warn("Your browser doesn't support Voice Recognition.");
 }
 
-// --- 7. CHAT LOGIC ---
+// --- 6. CHAT LOGIC ---
 async function askMonika(speakResponse = false) {
     let userInput = inputField.value.trim();
     
@@ -298,7 +186,7 @@ async function askMonika(speakResponse = false) {
     }
 }
 
-// --- 8. BUTTON EVENTS ---
+// --- 7. BUTTON EVENTS ---
 camBtn.onclick = () => {
     isVisionActive = !isVisionActive;
     camBtn.classList.toggle('active', isVisionActive);
@@ -308,7 +196,6 @@ camBtn.onclick = () => {
 micBtn.onclick = () => {
     if (recognition) {
         window.speechSynthesis.cancel(); 
-        stopLipSync();
         inputField.placeholder = "Monika is speaking...";
         
         const greeting = new SpeechSynthesisUtterance("What would you want to talk, Arpit?");
@@ -320,13 +207,7 @@ micBtn.onclick = () => {
             greeting.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
         }
 
-        // Make her lip-sync the greeting too!
-        greeting.onstart = () => startLipSync();
-        greeting.onend = () => {
-            stopLipSync();
-            recognition.start();
-        };
-
+        greeting.onend = () => recognition.start();
         window.speechSynthesis.speak(greeting);
         
     } else {

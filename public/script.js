@@ -219,7 +219,7 @@ async function askMonika(speakResponse = false) {
         }); 
 
     } catch (e) { 
-        console.error("Monika Fetch Error:", e);
+        console.error("Monika Fetch Error:", e); 
         loading.remove(); 
         appendMessage("Monika", "Connection lost... 💔"); 
         
@@ -240,6 +240,7 @@ camBtn.onclick = () => {
 
 micBtn.onclick = () => {
     if (isMonikaBusy || isListening) return; 
+
     if (recognition) {
         window.speechSynthesis.cancel(); 
         inputField.placeholder = "Monika is speaking...";
@@ -271,6 +272,7 @@ inputField.onkeydown = (e) => {
     if(e.key === "Enter" && !isMonikaBusy) askMonika(false); 
 };
 
+// --- XSS SECURITY PATCH ---
 function appendMessage(sender, text) {
     const msgDiv = document.createElement("div");
     msgDiv.className = `bubble ${sender === "You" ? "user" : "monika"}`;

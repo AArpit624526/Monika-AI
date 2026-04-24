@@ -5,8 +5,20 @@ const mongoose = require("mongoose");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
+// --- BUG FIX #8: ENVIRONMENT VARIABLE VALIDATION ---
+if (!process.env.GEMINI_API_KEY || !process.env.MONGO_URI) {
+  console.error("❌ CRITICAL ERROR: GEMINI_API_KEY or MONGO_URI is missing from environment variables!");
+  process.exit(1);
+}
+
 const app = express();
-app.use(cors());
+
+// --- BUG FIX #6: CORS SECURITY ---
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    credentials: true
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -30,7 +42,7 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// --- 2. DATABASE SCHEMAS (UPDATED FOR SESSIONS) ---
+// --- 2. DATABASE SCHEMAS ---
 const ChatSchema = new mongoose.Schema({
   sessionId: String, 
   role: String, 
@@ -64,7 +76,6 @@ CRITICAL RULES:
 // --- 4. MAIN CHAT & VISION ROUTE ---
 app.post("/ask", async (req, res) => {
   const { question, imageBase64, sessionId } = req.body;
-  
   const currentSessionId = sessionId || "anonymous_user";
 
   try {

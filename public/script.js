@@ -2,8 +2,9 @@
 const baseUrl = ""; 
 let isVisionActive = false; 
 let isMonikaBusy = false; 
+let isListening = false; 
 
-// --- NEW: SESSION MANAGEMENT ---
+// --- SESSION MANAGEMENT ---
 let sessionId = localStorage.getItem('monika_session');
 if (!sessionId) {
     sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
@@ -18,6 +19,8 @@ const camBtn = document.getElementById('camButton');
 const inputField = document.getElementById("question");
 const chatBox = document.getElementById("chat");
 const pipBtn = document.getElementById('pipButton');
+
+const globalUtterance = new SpeechSynthesisUtterance();
 
 // --- 1. POP-OUT LOGIC ---
 pipBtn.onclick = async () => {
@@ -49,8 +52,8 @@ function typeWriter(text, element, callback) {
     let i = 0;
     const cleanText = text.replace(/\[.*?\]/g, "").trim();
     
-    element.innerHTML = "<strong>Monika:</strong> <span class='msg-text'></span>";
     const textSpan = element.querySelector('.msg-text');
+    if(textSpan) textSpan.textContent = "";
 
     function type() {
         if (i < cleanText.length) {
@@ -84,6 +87,9 @@ function stopVision() {
 
 async function captureVisionFrame() {
     if (!visionFeed.srcObject) return null;
+    
+    if (!visionFeed.videoWidth || !visionFeed.videoHeight) return null;
+
     const canvas = document.getElementById('capture-canvas');
     canvas.width = visionFeed.videoWidth;
     canvas.height = visionFeed.videoHeight;
@@ -94,7 +100,6 @@ async function captureVisionFrame() {
 // --- 4. TEXT-TO-SPEECH (MONIKA'S VOICE) ---
 function monikaSpeak(text) {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance();
     
     let currentPitch = 1.4; 
     let currentRate = 1.15;
@@ -107,18 +112,18 @@ function monikaSpeak(text) {
         currentPitch = 1.3; currentRate = 1.05;
     }
 
-    utterance.pitch = currentPitch;
-    utterance.rate = currentRate;
+    globalUtterance.pitch = currentPitch;
+    globalUtterance.rate = currentRate;
     
     const cleanText = text.replace(/\[.*?\]/g, "");
-    utterance.text = cleanText;
+    globalUtterance.text = cleanText;
     
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-        utterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
+        globalUtterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
     }
 
-    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.speak(globalUtterance);
 }
 window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
@@ -132,16 +137,20 @@ if (SpeechRecognition) {
     recognition.interimResults = false; 
     
     recognition.onstart = () => {
+        isListening = true;
         micBtn.classList.add('listening');
         inputField.placeholder = "Listening...";
     };
     
     recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        inputField.value = transcript;
+        if (event.results && event.results[0] && event.results[0][0]) {
+            const transcript = event.results[0][0].transcript;
+            inputField.value = transcript;
+        }
     };
     
     recognition.onend = () => {
+        isListening = false;
         micBtn.classList.remove('listening');
         
         if (inputField.value.trim() !== "" && !isMonikaBusy) {
@@ -171,7 +180,7 @@ async function askMonika(speakResponse = false) {
 
     appendMessage("You", userInput);
     inputField.value = ""; 
-    const loading = appendMessage("Monika", "...");
+    const loading = appendMessage("Monika", ""); 
 
     let imageBase64 = isVisionActive ? await captureVisionFrame() : null;
 
@@ -210,6 +219,7 @@ async function askMonika(speakResponse = false) {
         }); 
 
     } catch (e) { 
+        console.error("Monika Fetch Error:", e);
         loading.remove(); 
         appendMessage("Monika", "Connection lost... 💔"); 
         
@@ -229,23 +239,24 @@ camBtn.onclick = () => {
 };
 
 micBtn.onclick = () => {
-    if (isMonikaBusy) return; 
-
+    if (isMonikaBusy || isListening) return; 
     if (recognition) {
         window.speechSynthesis.cancel(); 
         inputField.placeholder = "Monika is speaking...";
         
-        const greeting = new SpeechSynthesisUtterance("What would you want to talk about?");
-        greeting.pitch = 1.3;
-        greeting.rate = 1.0;
+        globalUtterance.text = "What would you want to talk about?";
+        globalUtterance.pitch = 1.3;
+        globalUtterance.rate = 1.0;
         
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
-            greeting.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
+            globalUtterance.voice = voices.find(v => v.name.includes("Female") || v.name.includes("Google UK English Female")) || voices[0];
         }
 
-        greeting.onend = () => recognition.start();
-        window.speechSynthesis.speak(greeting);
+        globalUtterance.onend = () => {
+            if(!isListening) recognition.start();
+        };
+        window.speechSynthesis.speak(globalUtterance);
         
     } else {
         alert("Voice recognition is not supported in this browser.");
@@ -263,7 +274,16 @@ inputField.onkeydown = (e) => {
 function appendMessage(sender, text) {
     const msgDiv = document.createElement("div");
     msgDiv.className = `bubble ${sender === "You" ? "user" : "monika"}`;
-    msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    
+    const strongTag = document.createElement("strong");
+    strongTag.textContent = `${sender}: `;
+    msgDiv.appendChild(strongTag);
+
+    const textSpan = document.createElement("span");
+    textSpan.className = "msg-text";
+    textSpan.textContent = text || (sender === "Monika" && !text ? "..." : ""); 
+    msgDiv.appendChild(textSpan);
+
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
     return msgDiv;
